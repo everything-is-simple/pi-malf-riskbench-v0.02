@@ -1,6 +1,6 @@
 # 08-测试验收-Test-Plan
 
-**版本**：v0.1.1
+**版本**：v0.1.3
 **日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **上游**：[02-PRD](./02-PRD-产品需求-Product-Requirements.md)、[03-架构设计](./03-架构设计-Architecture-Design.md)、[05-ERD](./05-数据模型-ERD-Data-Model.md)、[06-API](./06-API契约-API-Contracts.md)、[07-工作流](./07-工作流-Workflow.md)、[09-UI](./09-使用者介面-UI-Design.md)
@@ -150,7 +150,7 @@ fixture（tests/fixtures/，人肉推导）
 
 | 工具名 | 路由组 | 单件测试要点 | 测试 ID 段 |
 |---|---|---|---|
-| `query_snapshot` | malf.* | 正常输入返回 44 字段形状；缺失 symbol 抛 VALIDATION_ERROR；返回 `void`（registerTool） | T-UT-001 ~ T-UT-010 |
+| `query_snapshot` | malf.* | 正常输入返回 56 字段形状；缺失 symbol 抛 VALIDATION_ERROR；返回 `void`（registerTool） | T-UT-001 ~ T-UT-010 |
 | `query_signals` | malf.* | 正常输入返回事件流列表；空范围返回空数组；非法 timeframe 抛错 | T-UT-011 ~ T-UT-020 |
 | `query_symbol_list` | malf.* | 返回标的列表；DuckDB 只读不写 | T-UT-021 ~ T-UT-025 |
 | `query_timeframes` | malf.* | 返回 day/week/month；缺失标的返回空 | T-UT-026 ~ T-UT-030 |
@@ -212,8 +212,8 @@ fixture（tests/fixtures/，人肉推导）
 
 | 测试 ID | 测试名（中文描述） | 断言 |
 |---|---|---|
-| T-UT-301 | querySnapshot 正常返回 44 字段 | JSON Lines 响应含 result.snapshot |
-| T-UT-302 | querySnapshotRange 返回快照列表 | 响应为数组，每元素 44 字段 |
+| T-UT-301 | querySnapshot 正常返回 56 字段 | JSON Lines 响应含 result.snapshot（56 字段） |
+| T-UT-302 | querySnapshotRange 返回快照列表 | 响应为数组，每元素 56 字段 |
 | T-UT-303~310 | _预留段_ | 预留给 querySnapshot 系列扩展测试（如异常输入、边界条件） |
 | T-UT-311 | querySignals 返回事件流列表 | 响应含 result.events 数组 |
 | T-UT-312 | runBacktestVerification 返回验证结果 | 触发序列逐字节一致 |
@@ -396,7 +396,7 @@ fixture（tests/fixtures/，人肉推导）
 
 | 测试 ID | 测试名 | 断言 |
 |---|---|---|
-| T-SM-001 | query_snapshot 冒烟 | 查询 sh510050/day 返回 44 字段 |
+| T-SM-001 | query_snapshot 冒烟 | 查询 sh510050/day 返回 56 字段 |
 | T-SM-002 | query_signals 冒烟 | 查询事件流返回 4 事件码 |
 | T-SM-003 | query_symbol_list 冒烟 | 返回 3 标的（sh510050/sh510300/sz159915） |
 | T-SM-004 | query_timeframes 冒烟 | 返回 day/week/month |
@@ -564,7 +564,7 @@ tests/e2e/
 | T-E2E-001 | 启动 Electron 窗口 | 启动 main 进程 | 窗口可见，启动 < 3 秒 |
 | T-E2E-002 | 三栏布局渲染 | 渲染 renderer | 左/中/右三栏可见 |
 | T-E2E-003 | 选标的 sh510050 | 点击标的列表 | 中栏加载该标的数据 |
-| T-E2E-004 | 查看 day 快照 | 选 day 周期 | 显示 44 字段快照 |
+| T-E2E-004 | 查看 day 快照 | 选 day 周期 | 显示 56 字段快照 |
 | T-E2E-005 | 查看事件流 | 切换事件流 Tab | 显示 4 事件码事件流 |
 | T-E2E-006 | 切换 week/month | 选 week/month | 显示对应周期快照 |
 
@@ -588,7 +588,7 @@ tests/e2e/
 |---|---|---|---|
 | T-E2E-021 | 用户提问 | 输入问题 | session 接收 |
 | T-E2E-022 | 流式回复 | mock provider stream | 流式输出可见 |
-| T-E2E-023 | 工具调用 query_snapshot | AI 调用工具 | 工具返回 44 字段 |
+| T-E2E-023 | 工具调用 query_snapshot | AI 调用工具 | 工具返回 56 字段 |
 | T-E2E-024 | AI 解读标注 | 回复含"AI 解读" | 明确标注（AI-05） |
 | T-E2E-025 | AI 失败降级 | mock provider 抛错 | 降级不阻塞（AI-06） |
 | T-E2E-026 | AI 不修改 MALF 引擎 | AI 调用后 rule_versions 不变 | 只读（D29） |
@@ -616,7 +616,7 @@ tests/e2e/
 | T-E2E-043 | 恢复后 lineage_hash 一致 | 对比原 hash | 一致（D4/D8） |
 | T-E2E-044 | 生产目标默认拒绝 | 无 -AllowProductionWrite | 拒绝写入生产（D25） |
 | T-E2E-045 | 备份恢复联锁 | 恢复前必须备份 | 联锁生效 |
-| T-E2E-046 | 恢复后数据完整 | 行数与字段一致 | 15397 行 / 44 字段 |
+| T-E2E-046 | 恢复后数据完整 | 行数与字段一致 | 15397 行 / 56 字段 |
 | T-E2E-047 | signals 恢复一致 | 事件流行数一致 | 2835 事件 |
 | T-E2E-048 | usage 保持 research_only | 恢复后用途不变 | research_only（S30） |
 
@@ -848,11 +848,11 @@ cp Z:\ai-malf-riskbench-data\riskbench.duckdb Z:\ai-malf-riskbench--runtime\tmp\
 **vitest（TS）**：
 ```typescript
 describe('query_snapshot 工具', () => {
-  it('正常输入返回 44 字段快照形状', async () => {
+  it('正常输入返回 56 字段快照形状', async () => {
     // T-UT-001
     const result = await querySnapshot.execute({ symbol: 'sh510050', timeframe: 'day', bar_dt: '20260804' });
     expect(result.content).toBeDefined();
-    // 断言 44 字段
+    // 断言 56 字段
   });
 
   it('缺失 symbol 抛 VALIDATION_ERROR', async () => {
@@ -865,7 +865,7 @@ describe('query_snapshot 工具', () => {
 **pytest（Python）**：
 ```python
 def test_查询快照返回44字段形状():
-    """T-UT-001: query_snapshot 正常输入返回 44 字段快照形状"""
+    """T-UT-001: query_snapshot 正常输入返回 56 字段快照形状"""
     result = query_snapshot(symbol='sh510050', timeframe='day', bar_dt='20260804')
     assert len(result) == 44
 
@@ -1045,6 +1045,7 @@ def test_缺失symbol抛VALIDATION_ERROR():
 | v0.1.0 | 2026-08-09 | 初始草案：测试金字塔四层 + 关键断言矩阵 + 状态机测试矩阵 + 测试夹具 + 命名规范 + 合并 master 门槛 + G0-G3 门禁 + 性能基准 |
 | v0.1.1 | 2026-08-10 | 任务边界与容错审计 P0+P1 修复 + 第四轮交叉审查：§3.1 新增 quantify_risk 测试段 T-UT-136~145（P0-B）；§3.3 新增 T-UT-327/327a/327b Adapter 子进程崩溃恢复（P0-A，3 次重启 + 第 4 次 MALF_ENGINE_ERROR + 在途请求）；§3.3 新增 T-UT-331~337 quantify_risk 边界断言（P0-B）；§3.3 新增 T-UT-346/347 错误码边界区分（表不存在 DUCKDB_ERROR vs 行不存在 NOT_FOUND）；§5.8 INV-05 21→22 RPC 方法（P0-1，第四轮交叉审查）；§8.1 T-SM-001 重复 → T-UT-500（P0-3，第四轮交叉审查）。 |
 | v0.1.2 | 2026-08-10 | 工作台功能扩展（D1+D2 用户裁决）：§3.1 新增 query_market_snapshot / query_rankings 测试段 T-UT-146~155 / T-UT-156~165（D2 全市场横截面 + 排名，只读 DuckDB、筛选/窗口/非法 metric 断言）；§3.1 read_backtest_report 绩效断言（D1：performance.research_only=true 强制标记 + 空 performance 隐藏区块）；§5.1 新增全市场冒烟 T-SM-006/T-SM-007。 |
+| v0.1.3 | 2026-08-10 | 56 字段契约扩展（v0.01 T9.15，malf-engine ec161db）：§3.1 query_snapshot 测试断言 44→56 字段；T-UT-146~155 全市场横截面断言补 T9.15 字段（no_new_span/progress_rank/birth_type 投影）；§6.1 展示断言 56 字段。对应 05-ERD v0.1.4 + 06-API v0.1.5 + 09-UI v0.1.2。 |
 
 ---
 

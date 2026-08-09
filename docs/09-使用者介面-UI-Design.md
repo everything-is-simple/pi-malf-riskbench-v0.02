@@ -1,6 +1,6 @@
 # 09-使用者介面-UI-Design
 
-**版本**：v0.1.1
+**版本**：v0.1.2
 **日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **上游**：[02-PRD](./02-PRD-产品需求-Product-Requirements.md)、[03-架构设计](./03-架构设计-Architecture-Design.md)、[06-API](./06-API契约-API-Contracts.md)、[07-工作流](./07-工作流-Workflow.md)、[08-测试验收](./08-测试验收-Test-Plan.md)
@@ -180,7 +180,7 @@ end:   [2026-08-04 ▼]
 | 📊 全市场 | 全标的×周期横截面排名 + 筛选（**工作台入口，D2**） | 启动默认 | `query_market_snapshot` / `query_symbol_list` | ✅ 默认 |
 | 🏆 排行榜 | Lifespan 双轨寿命排名 Top-N（**D2**） | 用户触发 | `query_rankings` | |
 | 💬 AI 对话 | pi 原生 AI 承载 | 用户触发 | `ai_interpret_*` / 所有工具 | |
-| 📈 个股深度 | 单标的 44 字段 + signals 事件流 + 区间历史 + 图表 | 下钻（点全市场行） | `query_snapshot` / `query_signals` / `query_snapshot_range` | |
+| 📈 个股深度 | 单标的 56 字段 + signals 事件流 + 区间历史 + 图表 | 下钻（点全市场行） | `query_snapshot` / `query_signals` / `query_snapshot_range` | |
 | ⚠️ 风险声明 | 用户声明 + AI 矛盾提醒 + RISK 量化 | 选标的 | `declare_risk` / `list_risk_declarations` / `check_risk_contradiction` / `quantify_risk` | |
 | 📋 回测报告 | T4 验证报告 + 绩效指标（D1）+ HTML 预览 | 用户触发 | `run_backtest_report` / `read_backtest_report` | |
 | ⚙️ 设置 | 模型/凭据/路径/标的池/绩效开关 | 用户触发 | `models_config_get/set` / `credentials_get/set` | |
@@ -206,13 +206,35 @@ end:   [2026-08-04 ▼]
 - 数据：`query_rankings`（RankingDTO[]）
 - 视图：Wave 跨度 Top10 / Wave 停滞 Top10 / Range 演化 Top10 三栏
 - 窗口：全历史 ▾ / 近 20 期 ▾（基于 bar_dt 过滤）
+- **推进排名（T9.15）**：可切换展示 progress_rank Top-N（推进质量排行榜）
 - 点击条目 → 下钻 📈 个股深度
+
+### 4.3a 🎯 结构雷达 Tab（全市场结构聚合仪表盘，替代开盘啦式情绪面板）
+
+**设计原则**：100% 反映 malf 引擎 56 字段 + 4 事件码，零外部数据源（TDX 价格、统计频率层均不引入）。数据来自 `query_market_snapshot`（横截面）+ `query_signals`（事件流）。
+
+| 区块 | 内容 | 字段来源 |
+|---|---|---|
+| ① 市场结构分布 | 方向分布 / 结构状态 / P4 存活警告计数 | direction / system_state / p4_cross_alive_warning |
+| ② 寿命排名梯队 | span_rank 分位分布（≥0.9 超长寿命带等） | wave_span_rank / range_span_rank |
+| ③ 推进质量（T9.15） | progress_rank 分位分布 + progress_pct 直方图 | progress_rank / progress_pct |
+| ④ 出身分布（T9.15） | birth_type 三类计数（initial/continuation/reversal）——**向上趋势分类的引擎级答案** | birth_type |
+| ⑤ 动量分布 | P2 同向 / P3 方向优势 / P4 存活警告 | p2_same_dir_label / p3_cross_dir_label / p4_cross_alive_warning |
+| ⑥ 结构新高扫描 | progress_extreme 突破 transition_high 的标的 + 未创新值天数 | progress_extreme_price vs transition_boundary_high + bar_dt − progress_extreme_bar_dt |
+| ⑦ 停滞扫描（T9.15） | 未创新值天数 Top 列表 | **no_new_span**（引擎原生字段，降序） |
+| ⑧ 结构事件流 | 4 事件码最新事件 | signals（wave_terminated/range_resolved/guard_triggered/break_triggered） |
+| ⑨ 候选池 | 横截面 P1-P4 聚合 → 研究级推荐（research_only，不接实盘） | 56 字段聚合 |
+
+**诚实边界**（不胡编）：
+- 不输出"活多久/变盘概率"——引擎无概率（D19 边界），改展示确定性状态位（P4 存活警告 + 守卫距离 + bar_count）
+- "新高"= 结构新高（progress_extreme 突破转换边界），非价格新高
+- 候选池 = 研究级推荐（标注 research_only，AI 解读必须标注）
 
 ### 4.4 💬 AI 对话 Tab（pi 原生 AI 承载）
 
 承载 pi 原生 AI（pi-coding-agent + pi-ai provider）。详见 §5。
 
-### 4.5 📈 个股深度 Tab（单标的 44 字段 + signals + 区间历史 + 图表，D2 修复）
+### 4.5 📈 个股深度 Tab（单标的 56 字段 + signals + 区间历史 + 图表，D2 修复）
 
 展示第一层市场事实权威，确定性数据，不可改写。由全市场/排行榜下钻进入。详见 §6。
 
@@ -306,9 +328,9 @@ AI 在对话中可自主调用 registerTool 工具（03-Architecture §3.2），
 
 ## §6 市场事实 Tab 详解
 
-📊 市场事实 Tab 展示第一层权威：WaveStructuralSnapshot 44 字段 + signals 事件流。确定性数据，不可改写（02-PRD §1.3）。
+📊 个股深度 Tab 展示第一层权威：WaveStructuralSnapshot 56 字段 + signals 事件流。确定性数据，不可改写（02-PRD §1.3）。
 
-### 6.1 WaveStructuralSnapshot 44 字段展示（按层分组）
+### 6.1 WaveStructuralSnapshot 56 字段展示（按层分组，44 既有 + 12 新增 T9.15）
 
 字段契约来自 05-ERD §3 + MALF v2.1 Service §2。介面按 7 组分层展示，每组可折叠：
 
@@ -357,41 +379,59 @@ AI 在对话中可自主调用 registerTool 工具（03-Architecture §3.2），
 | 24 | wave_span_rank | float | 排名条（0.0-1.0） |
 | 25 | wave_range_rank | float | 排名条 |
 | 26 | wave_stagnation_rank | float | 排名条 |
+| 27 | progress_pct | float | 推进/守卫距离百分比条（T9.15 新增） |
+| 28 | new_count | float | 推进 pivot 数徽标（T9.15 新增） |
+| 29 | no_new_span | float | **没创新值天数**徽标（T9.15 新增，雷达停滞扫描核心字段） |
+| 30 | progress_rank | float | 推进排名条（T9.15 新增，可进排行榜） |
+| 31 | birth_type | str | 出身标签 initial/continuation/reversal（T9.15 新增） |
+| 32 | wave_id | str | 波段 ID（截断展示，T9.15 新增） |
+| 33 | wave_start_bar_dt | str | 波段起始时间（T9.15 新增） |
+| 34 | wave_end_bar_dt | str | 波段终止时间（T9.15 新增） |
+
+
+#### 6.1.4a Lifespan Range 演化（4 字段，T9.15 新增）
+
+| # | 字段 | 类型 | 展示 |
+|---|---|---|---|
+| 35 | range_amplitude_init | float | 区间初始幅度 |
+| 36 | range_amplitude_now | float | 区间当前幅度（可演化） |
+| 37 | range_amplitude_pct | float | 幅度变化比例 |
+| 38 | range_resolution_distance_pct | float | 解决距离比例（R5） |
 
 #### 6.1.5 Lifespan Range（4 字段）
 
 | # | 字段 | 类型 | 展示 |
 |---|---|---|---|
-| 27 | range_span_rank | float | 排名条 |
-| 28 | range_evolution_rank | float | 排名条 |
-| 29 | range_replacement_rank | float | 排名条 |
-| 30 | range_resolution_distance_rank | float | 排名条 |
+| 39 | range_span_rank | float | 排名条 |
+| 40 | range_evolution_rank | float | 排名条 |
+| 41 | range_replacement_rank | float | 排名条 |
+| 42 | range_resolution_distance_rank | float | 排名条 |
 
 #### 6.1.6 Structural Position（9 字段）
 
 | # | 字段 | 类型 | 展示 |
 |---|---|---|---|
-| 31 | p2_same_dir_span_momentum | float | 向量差（非概率），正负色 |
-| 32 | p2_same_dir_range_momentum | float | 同上 |
-| 33 | p2_same_dir_label | str | 辅助标签 |
-| 34 | p3_cross_dir_span_momentum | float | 向量差 |
-| 35 | p3_cross_dir_range_momentum | float | 同上 |
-| 36 | p3_cross_dir_label | str | 标签 |
-| 37 | p4_cross_span_momentum | float | 向量差 |
-| 38 | p4_cross_range_momentum | float | 同上 |
-| 39 | p4_cross_alive_warning | bool | 真实布尔（非 fallback），警告红 |
+| 43 | p2_same_dir_span_momentum | float | 向量差（非概率），正负色 |
+| 44 | p2_same_dir_range_momentum | float | 同上 |
+| 45 | p2_same_dir_label | str | 辅助标签 |
+| 46 | p3_cross_dir_span_momentum | float | 向量差 |
+| 47 | p3_cross_dir_range_momentum | float | 同上 |
+| 48 | p3_cross_dir_label | str | 标签 |
+| 49 | p4_cross_span_momentum | float | 向量差 |
+| 50 | p4_cross_range_momentum | float | 同上 |
+| 51 | p4_cross_alive_warning | bool | 真实布尔（非 fallback），警告红 |
 
 #### 6.1.7 元数据（5 字段）
 
 | # | 字段 | 类型 | 展示 |
 |---|---|---|---|
-| 40 | rule_versions | JSON | 展开树（pivot_rule/price_domain/adapter/core_version 等，05-ERD §3.8） |
-| 41 | lineage_hash | str | SHA256 64 字符 hex，截断展示 + 复制按钮 |
-| 42 | reason_codes | JSON | 失败模式枚举标签（见 §6.3） |
-| 43 | usage | str | 用途分级色标（见 §6.3） |
-| 44 | freshness | str | 新鲜度色标（见 §6.3） |
+| 52 | rule_versions | JSON | 展开树（pivot_rule/price_domain/adapter/core_version 等，05-ERD §3.8） |
+| 53 | lineage_hash | str | SHA256 64 字符 hex，截断展示 + 复制按钮 |
+| 54 | reason_codes | JSON | 失败模式枚举标签（见 §6.3） |
+| 55 | usage | str | 用途分级色标（见 §6.3） |
+| 56 | freshness | str | 新鲜度色标（见 §6.3） |
 
-> **防泄露**：`runtime_fingerprint` 不在 44 字段内，介面永不展示（D5，06-API §6.2）。
+> **防泄露**：`runtime_fingerprint` 不在 56 字段内，介面永不展示（D5，06-API §6.2）。
 
 ### 6.2 signals 事件流展示（4 事件码）
 
@@ -790,7 +830,7 @@ T4 验证的核心断言是"两次运行报告逐字节一致"（D24，05-ERD §
 
 | 防泄露项 | 约束 | 出处 |
 |---|---|---|
-| runtime_fingerprint | 永不展示（不在 44 字段 DTO 内） | D5 / 06-API §6.2 |
+| runtime_fingerprint | 永不展示（不在 56 字段 DTO 内） | D5 / 06-API §6.2 |
 | apiKey | 永不展示（usage 仅记 provider 名 + token 数） | 06-API §2.1 |
 | 完整 UUID | 流推送 payload 脱敏；渲染前二次脱敏 | 06-API §5 |
 | 文件绝对路径 | 错误返回固定安全编码，不暴露路径 | S9 / 06-API §2.3 |
@@ -837,7 +877,7 @@ UI 层测试断言对齐 08-测试验收（待写）与 03-Architecture §7 安�
 | 6 | HTML 预览独立 session | 预览窗口 session 隔离断言 | INV-06 |
 | 7 | runtime_fingerprint 不展示 | DTO 类型 AST + UI 渲染断言 | D5 |
 | 8 | AI 回复标"AI 解读"徽章 | UI 渲染断言 | AI-05 |
-| 9 | WaveStructuralSnapshot 44 字段完整展示 | 字段覆盖断言 | 05-ERD §3 |
+| 9 | WaveStructuralSnapshot 56 字段完整展示 | 字段覆盖断言 | 05-ERD §3 |
 | 10 | None 字段标灰 + reason_codes 旁注 | UI 渲染断言 | honest degradation |
 | 11 | lineage_hash + rule_versions 展示 | UI 渲染断言 | D4/D9/S4 |
 | 12 | 回测报告不输出收益类指标 | DTO 类型 AST + UI 渲染断言 | D19 |
@@ -854,6 +894,7 @@ UI 层测试断言对齐 08-测试验收（待写）与 03-Architecture §7 安�
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | v0.1.0 | 2026-08-09 | 初始草案：三栏布局 + 6 Tab（AI 对话/市场事实/风险声明/回测报告/图表/设置）+ WaveStructuralSnapshot 44 字段按层分组展示 + signals 4 事件码 + honest degradation 展示规则 + 确定性展示 + pi-desktop 组件映射 + 省略组件 + INV-01~06 安全边界 + 防泄露 + AI 解读标注 + 桌面优先响应式 + UI 测试断言。输入：02-PRD §1.3/§6 + 03-Architecture §2/§3/§7 + 05-ERD §3 + 06-API §3/§5/§6 + pi-studybuddy §2 范式 |
+| v0.1.2 | 2026-08-10 | 56 字段契约扩展（v0.01 T9.15，用户裁决）：§6.1 WaveStructuralSnapshot 展示表 44→56 字段（新增 Wave 推进 progress_pct/new_count/no_new_span/progress_rank/birth_type + Range 演化 4 + Wave 身份 3，§6.1.4a 新增）；§4.5 个股深度 44→56；雷达 Tab 推进质量/出身分布区块依据 56 字段。对应 05-ERD v0.1.4 + 06-API v0.1.5。 |
 | v0.1.1 | 2026-08-10 | 工作台功能扩展（D1+D2 用户裁决）：§4.1 Tab 总览 6→7（📊 全市场默认入口 + 🏆 排行榜；市场事实改名📈 个股深度；📈 图表并入个股深度）；新增 §4.2 全市场 Tab / §4.3 排行榜 Tab；§4.9 设置 Tab 补标的池/绩效开关；回测 Tab 补绩效指标区块（D1 research_only）。对应 06-API v0.1.4（query_market_snapshot/query_rankings）+ 04-Todo T-M1-012/013 + T-M2-017/018。 |
 
 ---

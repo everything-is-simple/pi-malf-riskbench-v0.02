@@ -1,6 +1,6 @@
 # 05-数据模型-ERD-Data-Model
 
-**版本**：v0.1.3
+**版本**：v0.1.4
 **日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **上游**：[03-架构设计](./03-架构设计-Architecture-Design.md)
@@ -28,7 +28,7 @@ v0.02 数据层完全继承 v0.01 的 DuckDB 生产库，新增表仅用于风�
 
 | # | 表名 | 类型 | 列数 | 主键 | 来源 |
 |---|---|---|:--:|---|---|
-| 1 | `snapshots` | v0.01 继承 | 44 | (symbol, timeframe, bar_dt) | v0.01 erd.md + MALF v2.1 Service §2 |
+| 1 | `snapshots` | v0.01 继承 + T9.15 扩展 | 56 | (symbol, timeframe, bar_dt) | v0.01 erd.md + MALF v2.1 Service §2 + v0.01 T9.15（用户裁决 2026-08-10） |
 | 2 | `signals` | v0.01 继承 | 10 | signal_id | v0.01 erd.md + MALF v2.1 Service §2 |
 | 3 | `risk_declarations` | v0.02 新增 | 9 | declaration_id | PRD §6.2 |
 | 4 | `ai_interpretations` | v0.02 新增 | 13 | interpretation_id | v0.02 新建（§5.2） |
@@ -36,7 +36,7 @@ v0.02 数据层完全继承 v0.01 的 DuckDB 生产库，新增表仅用于风�
 
 ### 1.3 设计原则
 
-1. **44 字段契约不可变**：WaveStructuralSnapshot 44 字段是 v0.02 唯一对外契约，下游（RISK/AI/BENCH/Viewer）只读不写
+1. **56 字段契约（v0.01 T9.15 扩展）**：WaveStructuralSnapshot 56 字段是 v0.02 唯一对外契约，下游（RISK/AI/BENCH/Viewer）只读不写；44 字段基础上增列 12 字段（Wave 推进 + Range 演化 + Wave 身份），不改既有字段语义（用户裁决 2026-08-10）
 2. **v0.01 schema 不修改**：snapshots/signals 表结构与 v0.01 完全一致，v0.02 只新增表
 3. **只读 Viewer 不改写**：v0.02 新增的 Viewer 只读 DuckDB，写入仍走 v0.01 管道（D28）
 4. **持久化分层**：DuckDB（生产库）+ JSONL（引擎内部）+ Parquet（冷备）三层各司其职
@@ -57,9 +57,9 @@ v0.02 数据层完全继承 v0.01 的 DuckDB 生产库，新增表仅用于风�
 
 ## §2 DuckDB 生产库 schema（v0.01 继承）
 
-### 2.1 snapshots 表（44 显式列，PK symbol,timeframe,bar_dt）
+### 2.1 snapshots 表（56 显式列，PK symbol,timeframe,bar_dt）
 
-> 出处：v0.01 erd.md + MALF v2.1 Service §2 WaveStructuralSnapshot 44 字段契约
+> 出处：v0.01 erd.md + MALF v2.1 Service §2 WaveStructuralSnapshot 44 字段契约 + v0.01 T9.15 增列 12 字段（malf-engine 分支 agent/T9.15-56field-schema，ec161db）
 
 **主键**：`(symbol, timeframe, bar_dt)`，复合主键，无 surrogate id / created_at / JSON 单列。
 
@@ -71,10 +71,13 @@ v0.02 数据层完全继承 v0.01 的 DuckDB 生产库，新增表仅用于风�
 | Core | 10 | system_state, direction, active_wave_id, progress_extreme_price, progress_extreme_bar_dt, guard_price, guard_bar_dt, bar_count, break_bar_dt, break_price |
 | Transition/Range | 9 | transition_boundary_high, transition_boundary_low, candidate_pivot_type, candidate_pivot_price, range_boundary_high_now, range_boundary_low_now, range_evolution_count, range_candidate_replacement_count, range_type |
 | Lifespan Wave | 3 | wave_span_rank, wave_range_rank, wave_stagnation_rank |
+| Lifespan Wave 推进（T9.15） | 5 | progress_pct, new_count, no_new_span, progress_rank, birth_type |
 | Lifespan Range | 4 | range_span_rank, range_evolution_rank, range_replacement_rank, range_resolution_distance_rank |
+| Lifespan Range 演化（T9.15） | 4 | range_amplitude_init, range_amplitude_now, range_amplitude_pct, range_resolution_distance_pct |
+| Wave 身份（T9.15） | 3 | wave_id, wave_start_bar_dt, wave_end_bar_dt |
 | Structural Position | 9 | p2_same_dir_span_momentum, p2_same_dir_range_momentum, p2_same_dir_label, p3_cross_dir_span_momentum, p3_cross_dir_range_momentum, p3_cross_dir_label, p4_cross_span_momentum, p4_cross_range_momentum, p4_cross_alive_warning |
 | 元数据 | 5 | rule_versions(JSON), lineage_hash, reason_codes(JSON), usage, freshness |
-| **合计** | **44** | — |
+| **合计** | **56** | — |
 
 > 完整字段说明见 §3。
 
@@ -111,11 +114,11 @@ v0.02 数据层完全继承 v0.01 的 DuckDB 生产库，新增表仅用于风�
 
 ---
 
-## §3 WaveStructuralSnapshot 44 字段详解（按层分组）
+## §3 WaveStructuralSnapshot 56 字段详解（按层分组，44 既有 + 12 新增 T9.15）
 
 > 出处：MALF v2.1 Service §2 + `MALF_05_Service_v2_1-deepseek-20260726.md` + v0.01 erd.md
 
-字段按 dataclass 顺序排列，分 7 组共 44 字段。所有 None 字段必须附 `reason_codes`（MALF v2.1 Service §8 honest degradation）。
+字段按 dataclass 顺序排列，分 10 组共 56 字段（44 既有 + 12 新增）。所有 None 字段必须附 `reason_codes`（MALF v2.1 Service §8 honest degradation）。
 
 ### 3.1 身份（4 字段）
 
@@ -168,6 +171,21 @@ v0.02 数据层完全继承 v0.01 的 DuckDB 生产库，新增表仅用于风�
 | 24 | `wave_span_rank` | float | 波段时间跨度排名 |
 | 25 | `wave_range_rank` | float | 波段幅度排名 |
 | 26 | `wave_stagnation_rank` | float | 波段停滞度排名 |
+
+### 3.4a Lifespan Wave 推进 + 身份（8 字段，T9.15 新增）
+
+> 对应 MALF v2.1 Lifespan §3 WaveLifespan 指标（引擎内部已计算，T9.15 投影补齐，用户裁决 2026-08-10）
+
+| # | 字段名 | 类型 | 说明 |
+|---|---|---|---|
+| 27 | `progress_pct` | float | 推进幅度 / guard 距离比例（1.0≈无回撤，0.5≈推进回撤相当） |
+| 28 | `new_count` | int | alive 期间新确认 pivot 数（推进频率） |
+| 29 | `no_new_span` | int | 最后新 pivot 到 break 的 bar 数（**没创新值天数**） |
+| 30 | `progress_rank` | float | progress_pct 的 percentile_rank（推进排名） |
+| 31 | `birth_type` | str | 波段出身：initial / continuation / reversal（**向上趋势分类的引擎级答案**） |
+| 32 | `wave_id` | str | 波段 ID（雷达标识，永不复用） |
+| 33 | `wave_start_bar_dt` | str | 波段起始 bar 时间（波段时间轴） |
+| 34 | `wave_end_bar_dt` | str | 波段终止 bar 时间（alive 中为 None） |
 
 ### 3.5 Lifespan Range（4 字段）
 
@@ -244,7 +262,7 @@ v0.02 数据层完全继承 v0.01 的 DuckDB 生产库，新增表仅用于风�
 
 > 出处：MALF v2.1 Core §8 + `MALF_01_Core_v2_1-deepseek-20260726.md` + `types.py`
 
-CoreStateSnapshot 是 MALF 引擎 Core 层的内部状态对象，**不直接持久化到 DuckDB**，而是经 Service 层组装为 WaveStructuralSnapshot 44 字段后持久化。字段分 10 组共 43 字段（含 Range 扩展）。
+CoreStateSnapshot 是 MALF 引擎 Core 层的内部状态对象，**不直接持久化到 DuckDB**，而是经 Service 层组装为 WaveStructuralSnapshot 56 字段后持久化。字段分 10 组共 43 字段（含 Range 扩展）。
 
 | 分组 | 字段数 | 说明 |
 |---|:--:|---|
@@ -492,7 +510,7 @@ PriceBar (全整数, D2/D13)
 MALFCoreEngine.on_bar (malf-engine, 115 passed)
     │  → CoreStateSnapshot (引擎内部)
     ▼
-Service 层组装 WaveStructuralSnapshot (44 字段)
+Service 层组装 WaveStructuralSnapshot (56 字段)
     │  lineage_hash SHA256 (D4/D9)
     │  rule_versions 完整性校验 (S4)
     ▼
@@ -651,6 +669,7 @@ TDX 全量重跑 (run_pipeline.ps1)
 | v0.1.1 | 2026-08-09 | 第三轮交叉审查修复：§5.1 risk_declarations 表写入通道说明（P1-2 修复，建表需可写连接层 T-M2-016，非只读访问层 T-M1-001）；§5.2 ai_interpretations 表关系说明（P2-4，与内嵌字段关系）。 |
 | v0.1.2 | 2026-08-10 | 任务边界与容错审计 P1-2 修复：§5.1 可写连接层容错（WAL 模式 + 单连接串行写 + 崩溃恢复 ≤3 次重连 + 写超时 10 秒 + 数据隔离 + 失败降级，与 03-Arch §4.2.2 一致）。 |
 | v0.1.3 | 2026-08-10 | 标的池扩展 D3（ETF 500+）：§1.4 标的 3→500+（规划目标，T-M2-019~021）；§11.3 性能基准补 D3 分批 ingest 预估（每批 50 标的、全历史 8-14 小时）+ 全市场横截面查询 <500ms + 磁盘 ≥10GB。 |
+| v0.1.4 | 2026-08-10 | 56 字段契约扩展（v0.01 T9.15，malf-engine ec161db）：§1.2/§2.1 snapshots 表 44→56 列（Wave 推进 5 + Range 演化 4 + Wave 身份 3）；§3.4a 新增 12 字段详解；§3 标题 44→56。对应 06-API v0.1.5 + 09-UI v0.1.2。 |
 
 ---
 

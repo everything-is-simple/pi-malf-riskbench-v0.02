@@ -1,6 +1,6 @@
 # 06-API契约-API-Contracts
 
-**版本**：v0.1.3
+**版本**：v0.1.5
 **日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **上游**：[03-架构设计](./03-架构设计-Architecture-Design.md)、[05-ERD](./05-数据模型-ERD-Data-Model.md)
@@ -125,7 +125,7 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 
 | 方法名 | 路由组 | 请求 DTO | 响应 DTO | 权限 | 暴露为 registerTool | 说明 |
 |---|---|---|---|---|:--:|---|
-| `query_snapshot` | malf.* | `{symbol, timeframe, bar_dt}` | `WaveStructuralSnapshotDTO` | 只读 | ✅ | 查询单个 snapshot（44 字段，防泄露） |
+| `query_snapshot` | malf.* | `{symbol, timeframe, bar_dt}` | `WaveStructuralSnapshotDTO` | 只读 | ✅ | 查询单个 snapshot（56 字段，防泄露） |
 | `query_snapshot_range` | malf.* | `{symbol, timeframe, start_dt, end_dt}` | `WaveStructuralSnapshotDTO[]` | 只读 | ❌（RPC 专用） | 查询 snapshot 范围 |
 | `query_signals` | malf.* | `{symbol, timeframe, start_dt, end_dt}` | `SignalDTO[]` | 只读 | ✅ | 查询事件流（4 事件码） |
 | `query_symbol_list` | malf.* | `{}` | `string[]` | 只读 | ✅ | 获取标的列表 |
@@ -164,7 +164,7 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 | `query_symbol_list` | `{}` | `string[]` | DuckDB SELECT DISTINCT symbol；当前 3 标的（sh510050/sh510300/sz159915），D3 扩展后 500+ ETF（标的池清单 `config/universe.json`，T-M2-019） |
 | `query_timeframes` | `{symbol}` | `string[]` | 返回 `['day','week','month']` 子集 |
 | `query_market_snapshot` | `{timeframe?, direction?, state?, min_span_rank?, max_rows?}` | `MarketSnapshotRowDTO[]` | **全市场横截面（D2 修复，02-PRD 四层闭环全市场视角）**：全标的×周期最新快照；按 span_rank 降序；上限 200 行防内存膨胀；只读 DuckDB（D28） |
-| `query_rankings` | `{timeframe?, metric, top_n?, window?}` | `RankingDTO[]` | **寿命排行榜（D2 修复）**：metric ∈ {span, range, stagnation, range_evolution, range_resolution}；window 全历史/近 N 期；基于 44 字段 Lifespan 双轨排名 |
+| `query_rankings` | `{timeframe?, metric, top_n?, window?}` | `RankingDTO[]` | **寿命排行榜（D2 修复）**：metric ∈ {span, range, stagnation, range_evolution, range_resolution}；window 全历史/近 N 期；基于 56 字段 Lifespan 双轨排名（含 T9.15 progress_rank） |
 | `explain_snapshot` | `{symbol, timeframe, bar_dt}` | `{explanation: string}` | 引用 MALF v2.1 字段权威解释；不含运行时指纹 |
 
 ### 3.2 risk.* 路由组（风险声明 + 量化工具，6 个）
@@ -290,7 +290,7 @@ v0.01 五组件的 API 经 MALF Adapter 封装为 §3 的 registerTool 工具。
 
 > **Adapter 签名包装责任**（P0-10 修复，与 03-Arch §4.1 / 11-组件装配 §5.3 一致）：Adapter 方法签名（TypeScript 侧，如 `querySnapshot(symbol, timeframe, bar_dt)`）与 v0.01 Python API 签名可能不完全一致。Adapter 负责：
 > 1. **参数名/类型转换**：TS 侧 `bar_dt: string`（ISO 日期）→ Python 侧 `bar_dt: datetime.date`
-> 2. **返回值归一**：Python dict / dataclass → TS DTO（44 字段 + 防泄露 D5 过滤）
+> 2. **返回值归一**：Python dict / dataclass → TS DTO（56 字段 + 防泄露 D5 过滤）
 > 3. **错误码映射**：Python 异常 → §4.4 四码（INTERNAL_ERROR / MALF_ENGINE_ERROR / DUCKDB_ERROR / VALIDATION_ERROR）
 > 4. **`lineage_hash` / `rule_versions` 原样透传**：Adapter 不重算、不修改（D29），直接从 v0.01 产出透传到 DTO
 >
@@ -324,7 +324,7 @@ Adapter 层错误码是 §2.2 统一错误码的子集（不含 `NOT_FOUND`，�
 | 主题 | `snapshot.updated` |
 | 触发条件 | MALF 引擎产出新 snapshot 并写入 DuckDB/var/published |
 | 推送数据 | `{symbol, timeframe, bar_dt, lineage_hash}` |
-| 说明 | 仅推送摘要（不含完整 44 字段，防泄露）；renderer 收到后按需调用 `query_snapshot` 拉取完整 DTO |
+| 说明 | 仅推送摘要（不含完整 56 字段，防泄露）；renderer 收到后按需调用 `query_snapshot` 拉取完整 DTO |
 
 ### 5.2 signal.detected 流（v0.1 预留，不实现）
 
@@ -368,9 +368,9 @@ Adapter 层错误码是 §2.2 统一错误码的子集（不含 `NOT_FOUND`，�
 | S9 安全编码 | 错误返回固定安全编码，不暴露 Key/URL/路径/堆栈 | 01-TRD S9 |
 | 三层权威 | AI 解读不凌驾第一层（市场事实）+ 第二层（用户声明） | 02-PRD §1.3 |
 
-### 6.2 WaveStructuralSnapshotDTO（44 字段，防泄露）
+### 6.2 WaveStructuralSnapshotDTO（56 字段，防泄露）
 
-> 字段契约来自 MALF v2.1 Service §2（03-Architecture §9.1），身份4 + Core10 + Transition/Range9 + Lifespan Wave3 + Lifespan Range4 + Structural Position9 + 元数据5 = 44。
+> 字段契约来自 MALF v2.1 Service §2（03-Architecture §9.1）+ v0.01 T9.15 增列 12 字段（malf-engine agent/T9.15-56field-schema，ec161db）。身份4 + Core10 + Transition/Range9 + Lifespan Wave3 + **Wave 推进5 + Wave 身份3** + Lifespan Range4 + **Range 演化4** + Structural Position9 + 元数据5 = **56**。完整字段清单见 05-ERD §2.1（与表 schema 逐列对齐）。
 
 ```typescript
 {
@@ -381,28 +381,67 @@ Adapter 层错误码是 §2.2 统一错误码的子集（不含 `NOT_FOUND`，�
   bar_index: number,                     // bar 序号（从 0 起，与 05-ERD §3.1 表 schema 一致）
 
   // Core（10）
-  wave_direction: 'up' | 'down' | null,
-  wave_status: string,
-  pivot_extreme_price: number | null,    // 整数价格（/1000 仅展示）
-  pivot_confirm_bar_dt: string | null,
-  // ... 其余 Core 字段
+  system_state: string,                  // up_alive / down_alive / transition_active / uninitialized
+  direction: 'up' | 'down' | null,
+  active_wave_id: string | null,
+  progress_extreme_price: number | null, // 整数价格（/1000 仅展示）
+  progress_extreme_bar_dt: string | null,
+  guard_price: number | null,
+  guard_bar_dt: string | null,
+  bar_count: number | null,
+  break_bar_dt: string | null,
+  break_price: number | null,
 
   // Transition / Range（9）
-  // ...
+  transition_boundary_high: number | null,
+  transition_boundary_low: number | null,
+  candidate_pivot_type: string | null,
+  candidate_pivot_price: number | null,
+  range_boundary_high_now: number | null,
+  range_boundary_low_now: number | null,
+  range_evolution_count: number | null,
+  range_candidate_replacement_count: number | null,
+  range_type: string | null,             // continuation / reversal
 
   // Lifespan Wave（3）
-  wave_rank: number | null,
-  // ...
+  wave_span_rank: number | null,
+  wave_range_rank: number | null,
+  wave_stagnation_rank: number | null,
+
+  // Lifespan Wave 推进（5，T9.15）
+  progress_pct: number | null,           // 推进/守卫距离比例（1.0≈无回撤）
+  new_count: number | null,              // 推进 pivot 数（推进频率）
+  no_new_span: number | null,            // 没创新值天数（雷达停滞扫描）
+  progress_rank: number | null,          // 推进排名（可进排行榜）
+  birth_type: 'initial' | 'continuation' | 'reversal' | null,  // 波段出身（向上趋势分类）
+
+  // Lifespan Wave 身份（3，T9.15）
+  wave_id: string | null,
+  wave_start_bar_dt: string | null,
+  wave_end_bar_dt: string | null,
 
   // Lifespan Range（4）
-  // ...
+  range_span_rank: number | null,
+  range_evolution_rank: number | null,
+  range_replacement_rank: number | null,
+  range_resolution_distance_rank: number | null,
+
+  // Lifespan Range 演化（4，T9.15）
+  range_amplitude_init: number | null,
+  range_amplitude_now: number | null,
+  range_amplitude_pct: number | null,
+  range_resolution_distance_pct: number | null,
 
   // Structural Position（9）
-  p1: object | null,
-  p2: object | null,
-  p3: object | null,
-  p4: object | null,
-  // ...
+  p2_same_dir_span_momentum: number | null,
+  p2_same_dir_range_momentum: number | null,
+  p2_same_dir_label: string | null,      // accelerating / decelerating
+  p3_cross_dir_span_momentum: number | null,
+  p3_cross_dir_range_momentum: number | null,
+  p3_cross_dir_label: string | null,     // self_dominant / opposite_dominant / balanced
+  p4_cross_span_momentum: number | null,
+  p4_cross_range_momentum: number | null,
+  p4_cross_alive_warning: boolean,       // 结构濒临反转警示
 
   // 元数据（5）
   usage: 'research_only' | 'stale_research_only' | 'verification_only' | 'rejected',
@@ -417,6 +456,7 @@ Adapter 层错误码是 §2.2 统一错误码的子集（不含 `NOT_FOUND`，�
 
 **防泄露规则**：
 - `runtime_fingerprint` **永不暴露**（D5：runtime_fingerprint 排除出 lineage_hash，亦排除出 DTO）
+- **T9.15 新字段不进入 lineage_hash**（处置 1，D5 先例：calculate_lineage_hash 只哈希字段子集，新增字段天然排除，已验证）
 - 整数价格策略：DTO 中价格为整数（source_integer_fixed_point，D2），`/1000` 仅在 UI 展示层转换（D21）
 - `None` 字段必须附 `reason_codes`（honest degradation，不补零不估计）
 - `rule_versions` 必须完整，缺失则禁止发布（MALF v2.1 Service S4）
@@ -571,7 +611,7 @@ interface MarketSnapshotRowDTO {
   bar_dt: string,                          // 最新快照日期
   direction: 'up' | 'down' | null,
   system_state: string,                    // wave_alive / transition_active 等
-  // Lifespan 双轨排名（44 字段直接投影）
+  // Lifespan 双轨排名（56 字段直接投影）
   wave_span_rank: number | null,
   wave_range_rank: number | null,
   wave_stagnation_rank: number | null,
@@ -585,7 +625,7 @@ interface MarketSnapshotRowDTO {
   },
   reason_codes: string[],                  // honest degradation 透传
   lineage_hash: string                     // 可下钻到单标的快照（D29 原样）
-  // ⛔ 不含：runtime_fingerprint（D5）、完整 44 字段（下钻用 query_snapshot）
+  // ⛔ 不含：runtime_fingerprint（D5）、完整 56 字段（下钻用 query_snapshot）
 }
 
 // 寿命排行榜条目（query_rankings 响应元素）
@@ -602,7 +642,7 @@ interface RankingDTO {
 ```
 
 **约束**：
-- 排名数据来自 DuckDB snapshots 表 44 字段 Lifespan 双轨（05-ERD §3.4/§3.5），**零引擎改动**（v0.01 已产出）
+- 排名数据来自 DuckDB snapshots 表 56 字段 Lifespan 双轨（05-ERD §3.4/§3.4a/§3.5/§3.5a），引擎已产出（v0.01 T9.15 投影补齐）
 - 只读（D28）；上限 200 行防内存膨胀（query_market_snapshot）
 - 未形成排名（None）的标的附 reason_codes 展示，不补零不估计（honest degradation）
 - 全市场视图的标的池 = query_symbol_list（当前 3 标的，D3 扩展待用户裁决）
@@ -714,6 +754,7 @@ check-contract-coverage.mjs
 | v0.1.2 | 2026-08-09 | 第三轮交叉审查修复：§5 Streams 边界实现说明（§5.1/5.2 v0.1 预留，§5.3/5.4 v0.1 实现，P2-1）；§6.5 BacktestReportDTO robustness_result 改可选 + 落盘目标说明（P1-3，实查 runner.py 纯内存返回）；§6.4 ai_interpretations 孤儿表关系说明（P2-4）；§3 双层暴露分类 5+2→6+1（O-3）。 |
 | v0.1.3 | 2026-08-10 | 任务边界与容错审计 P0+P1 修复：§3.2 新增 quantify_risk 方法（risk.* 路由组 5→6，RPC 21→22，registerTool 14→15，P0-B）；§4.1 子进程崩溃恢复策略（P0-A，4 阶段表）；§6.5 回测运行容错策略（P1-1，60 秒超时 + 子进程崩溃 + 窗口关闭 + 磁盘写失败）；§6.7 RiskQuantifierDTO（P0-B，extremity/momentum/directional_advantage/joint_risk_alert + lineage_hash/rule_versions 透传）；§6.4 RiskDeclarationDTO linked_fields→linked_snapshot_fields（P1-2，第四轮交叉审查，与 05-ERD §5.1 表 schema 一致）；§6.2 WaveStructuralSnapshotDTO snapshot_id→bar_index（P1-3，第四轮交叉审查，与 05-ERD §3.1 表 schema 一致）；§6.5 交叉引用 §5.2→§5.3（P1-4，第四轮交叉审查，backtest.progress 在 §5.3）。 |
 | v0.1.4 | 2026-08-10 | 工作台功能扩展（D1+D2 用户裁决）：§3 新增 query_market_snapshot / query_rankings（malf.* 6→8，RPC 22→24，registerTool 15→17，D2 全市场落地）；§3.4/§6.5 回测绩效指标放开（D1，research_only，02-PRD §4.4 语义恢复，performance 字段可选 + research_only:true 强制标记）；§6.8 新增 MarketSnapshotRowDTO / RankingDTO；§7.1 malf 8 + §7.3 白名单 17 + §8.1 AST 校验 24/17 同步。对应 04-Todo T-M1-012/013 + T-M2-017/018 新任务。 |
+| v0.1.5 | 2026-08-10 | 56 字段契约扩展（v0.01 T9.15，malf-engine ec161db）：§6.2 WaveStructuralSnapshotDTO 44→56 字段（精确字段清单替换概念性 DTO，新增 Wave 推进 5 + Wave 身份 3 + Range 演化 4）；§3.1 query_snapshot 56 字段；防泄露规则补 T9.15 新字段不进入 lineage_hash（处置 1，D5 先例）。对应 05-ERD v0.1.4 + 09-UI v0.1.2。 |
 
 ---
 

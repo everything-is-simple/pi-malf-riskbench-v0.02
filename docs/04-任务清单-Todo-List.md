@@ -1,6 +1,6 @@
 # 04-任务清单-Todo-List
 
-**版本**：v0.1.5
+**版本**：v0.1.6
 **日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **上游**：[01-TRD](./01-TRD-技术需求-Technical-Requirements.md)、[02-PRD](./02-PRD-产品需求-Product-Requirements.md)、[03-架构设计](./03-架构设计-Architecture-Design.md)、[05-ERD](./05-数据模型-ERD-Data-Model.md)、[06-API](./06-API契约-API-Contracts.md)、[07-工作流](./07-工作流-Workflow.md)、[08-测试验收](./08-测试验收-Test-Plan.md)、[09-UI](./09-使用者介面-UI-Design.md)
@@ -294,9 +294,9 @@
 | M0 | 骨架 | Electron 五件骨架 + 安全沙箱 + MALF Adapter 试炼 + v0.02 环境冒烟 | ~9 |
 | M1 | 核心闭环 | MALF 查询工具 + explain_snapshot + 只读 Viewer + DuckDB 只读访问 + v0.01 继承复验 + 全市场横截面 | ~13 |
 | M2 | 完整闭环 | RISK 风险声明 + RISK 量化器 + AI 解读 + ai_discover_rules + 回测报告 Viewer + 配置层基础 + 运行时可写 DB + 排行榜 + 回测绩效 + ETF 500+ 标的池扩展 | ~21 |
-| M3 | 打磨 | 技能系统 + prompt 模板 + 多模型切换 + 性能优化 + 设置页业务接线 + Streams 边界 + 候选池 | ~15 |
+| M3 | 打磨 | 技能系统 + prompt 模板 + 多模型切换 + 性能优化 + 设置页业务接线 + Streams 边界 + 候选池 + 结构雷达 | ~16 |
 | M4 | 治理补全 + 打包部署 | 治理脚本断言补全 + Electron + Python 子进程打包 | ~8 |
-| **合计** | — | — | **~66（pending，不含 cancelled 4；总计 70，见 §9.1）** |
+| **合计** | — | — | **~67（pending，不含 cancelled 4；总计 71，见 §9.1）** |
 
 > 说明：M4 任务数由原 ~10 调整为 ~8（pending），因 T-M4-001~004（设置页业务接线）按 11-组件装配 §10 批次 3 归入 M3（cancelled 占位不计）；M4 新增 Python MALF 子进程打包（T-M4-008b）与 v0.01 组件资源打包（T-M4-008c）。M0 新增 T-M0-009 系统冒烟（对齐 scripts/smoke.mjs 引用）。M1 新增 T-M1-011 explain_snapshot 工具（06-API §3.1 缺 task-id 补齐）+ T-M1-012/013 全市场横截面与全市场 Tab（D2）；M2 新增 T-M2-013 配置层基础 + T-M2-014 ai_discover_rules 工具（06-API §3.3 缺 task-id 补齐）+ T-M2-015 RISK 量化器（PRD RISK-01~04 补齐）+ T-M2-016 运行时可写 DuckDB（P1-2 修复）+ T-M2-017 排行榜（D2）+ T-M2-018 回测绩效（D1）；M3 新增 T-M3-013 Streams 边界落地（P2-1 修复）+ T-M3-014 候选池 + T-M3-015 设置补全（D1/D2）。
 
@@ -501,6 +501,7 @@
 | T-M3-013 | Streams 边界落地（backtest.progress + ai.interpretation.streaming 实现；snapshot.updated/signal.detected 明确为 v0.1 预留不实现） | 业务模块 | 通用 | P2 | pending | 集成 | [06-API](./06-API契约-API-Contracts.md) §5 | `apps/desktop/src/streams/` | — | 依赖 T-M2-008/006（P2-1 修复：Streams 边界明确） |
 | T-M3-014 | 候选池（跨 Tab 多选标的 → 批量回测/导出） | 业务模块 | Viewer | P1 | pending | 组装 | [09-UI](./09-使用者介面-UI-Design.md) §4.2 | `apps/desktop/src/renderer/candidate-pool.ts` | — | 依赖 T-M1-013（全市场 Tab）；工作台批量操作（D2 修复）；候选池状态落运行时沙箱 |
 | T-M3-015 | 设置 Tab 数据源/标的池/绩效开关配置 | 业务模块 | Viewer | P1 | pending | 组装 | [09-UI](./09-使用者介面-UI-Design.md) §4.9 | `apps/desktop/src/renderer/tabs/settings-workbench.tsx` | — | 依赖 T-M3-009（设置 Tab 骨架）；数据源/标的池（D3 扩展待裁决）/绩效指标开关（D1） |
+| T-M3-016 | 🎯 结构雷达 Tab（全市场结构聚合仪表盘，替代开盘啦式情绪面板） | 业务模块 | Viewer | P0 | pending | 组装 | [09-UI](./09-使用者介面-UI-Design.md) §4.3a | `apps/desktop/src/renderer/tabs/structure-radar.tsx` | — | 依赖 T-M1-012（横截面）、T-M1-004（signals）；9 区块 100% 来自 56 字段 + 4 事件码（零外部数据）；含推进质量（progress_rank/progress_pct）、出身分布（birth_type）、停滞扫描（no_new_span）；候选池研究级推荐（research_only，不接实盘）；不输出概率（D19 边界） |
 
 ### §7.5 M4 任务大纲（治理补全+打包部署）
 
@@ -582,15 +583,16 @@
 | 55 | T-M3-013 | M3 | Streams 边界落地（backtest.progress + ai.streaming） | T-M2-008/006 |
 | 56 | T-M3-014 | M3 | 候选池（跨 Tab 多选 → 批量回测/导出） | T-M1-013 |
 | 57 | T-M3-015 | M3 | 设置 Tab 数据源/标的池/绩效开关配置 | T-M3-009 |
-| 58 | T-M3-008 | M3 | M3 系统冒烟 + E2E | T-M3-001~007/009~015 |
-| 59 | T-M4-005 | M4 | verify.mjs 补全断言用例 | 无（可并行） |
-| 60 | T-M4-006 | M4 | check-contract-coverage.mjs 补全 AST 校验用例 | 无（可并行） |
-| 61 | T-M4-007 | M4 | check-desktop-security.mjs 补全 INV-01~06 断言用例 | 无（可并行） |
-| 62 | T-M4-008a | M4 | Electron 主进程打包（electron-builder，NSIS） | M3 完成 |
-| 63 | T-M4-008b | M4 | Python MALF 子进程打包（PyInstaller / embedded） | T-M4-008a |
-| 64 | T-M4-008c | M4 | v0.01 组件 + 资源打包 | T-M4-008a |
-| 65 | T-M4-009 | M4 | 打包冒烟测试（安装包 + 首启 + 子进程握手） | T-M4-008a/008b/008c |
-| 66 | T-M4-010 | M4 | M4 系统冒烟 + E2E + 打包验证 | T-M4-005/006/007/009 |
+| 58 | T-M3-016 | M3 | 🎯 结构雷达 Tab（9 区块，56 字段） | T-M1-012、T-M1-004 |
+| 59 | T-M3-008 | M3 | M3 系统冒烟 + E2E | T-M3-001~007/009~016 |
+| 60 | T-M4-005 | M4 | verify.mjs 补全断言用例 | 无（可并行） |
+| 61 | T-M4-006 | M4 | check-contract-coverage.mjs 补全 AST 校验用例 | 无（可并行） |
+| 62 | T-M4-007 | M4 | check-desktop-security.mjs 补全 INV-01~06 断言用例 | 无（可并行） |
+| 63 | T-M4-008a | M4 | Electron 主进程打包（electron-builder，NSIS） | M3 完成 |
+| 64 | T-M4-008b | M4 | Python MALF 子进程打包（PyInstaller / embedded） | T-M4-008a |
+| 65 | T-M4-008c | M4 | v0.01 组件 + 资源打包 | T-M4-008a |
+| 66 | T-M4-009 | M4 | 打包冒烟测试（安装包 + 首启 + 子进程握手） | T-M4-008a/008b/008c |
+| 67 | T-M4-010 | M4 | M4 系统冒烟 + E2E + 打包验证 | T-M4-005/006/007/009 |
 
 > 说明：无前置依赖的任务（T-M3-007、T-M4-005/006/007）可与同里程碑其他任务并行执行，但不得违反"单一执行任务门禁"（铁律 4）。T-M4-001~004 已上移至 M3（T-M3-009~012）。T-M1-011（explain_snapshot）与 T-M2-014（ai_discover_rules）为 06-API §3 缺 task-id 补齐（交叉审查 N-9 修复）。T-M2-015（RISK 量化器）/ T-M2-016（运行时可写 DB）/ T-M3-013（Streams 边界）为第三轮交叉审查任务缺口补齐。T-M1-012/013（全市场横截面 + 全市场 Tab）、T-M2-017/018（排行榜 + 回测绩效）、T-M3-014/015（候选池 + 设置补全）为工作台功能扩展（D1+D2 用户裁决）。T-M2-019~021（ETF 标的池扩展：universe.json + 分批 ingest + 全市场验证）为 D3 用户裁决（ETF 500+）。
 
@@ -635,9 +637,9 @@
 | M0 | 9 | 9 | 0 | 0 | 0 | 0 | 0 |
 | M1 | 13 | 13 | 0 | 0 | 0 | 0 | 0 |
 | M2 | 21 | 21 | 0 | 0 | 0 | 0 | 0 |
-| M3 | 15 | 15 | 0 | 0 | 0 | 0 | 0 |
+| M3 | 16 | 16 | 0 | 0 | 0 | 0 | 0 |
 | M4 | 12 | 8 | 0 | 0 | 0 | 0 | 4（T-M4-001~004 占位） |
-| **合计** | **70** | **66** | **0** | **0** | **0** | **0** | **4** |
+| **合计** | **71** | **67** | **0** | **0** | **0** | **0** | **4** |
 
 > 说明：原 T-M4-001~004 业务模块上移至 M3（T-M3-009~012）；M0 新增 T-M0-009 系统冒烟；M1 新增 T-M1-011 explain_snapshot 工具（06-API §3.1 缺 task-id 补齐）+ T-M1-012/013 全市场横截面与全市场 Tab（D2 工作台扩展）；M2 新增 T-M2-013 配置层基础 + T-M2-014 ai_discover_rules 工具（06-API §3.3 缺 task-id 补齐）+ T-M2-015 RISK 量化器（PRD RISK-01~04 补齐）+ T-M2-016 运行时可写 DuckDB（P1-2 修复）+ T-M2-017 排行榜 + T-M2-018 回测绩效（D1/D2）；M3 新增 T-M3-013 Streams 边界落地（P2-1 修复）+ T-M3-014 候选池 + T-M3-015 设置补全（D1/D2）；M4 T-M4-008 拆分为 008a/008b/008c（Python 子进程打包 + v0.01 组件资源打包）。T-M4-001~004 task-id 一经分配不可重用（§2.1 规则 1），保留占位但状态标 cancelled。
 
@@ -662,11 +664,11 @@
 
 | 优先级 | 任务数 | 占比 |
 |---|---|---|
-| P0 | 48 | 72.7% |
-| P1 | 14 | 21.2% |
-| P2 | 4 | 6.1% |
+| P0 | 49 | 73.1% |
+| P1 | 14 | 20.9% |
+| P2 | 4 | 6.0% |
 | P3 | 0 | 0.0% |
-| **合计** | **66**（按 task-id 计数，T-M4-008a/b/c 各计 1） | — |
+| **合计** | **67**（按 task-id 计数，T-M4-008a/b/c 各计 1） | — |
 
 ---
 
@@ -680,6 +682,7 @@
 | v0.1.3 | 2026-08-10 | 第三轮交叉审查 15 洞修复 + 任务边界审计（AGENTS.md §11.4）：① 新增 T-M2-015 RISK 量化器（PRD RISK-01~04 补齐，P0-B 修复）+ T-M2-016 运行时可写 DuckDB（P1-2 修复，运行时沙箱 WAL 模式）+ T-M3-013 Streams 边界落地（P2-1 修复）；② §6.1/§7.3/§7.6/§9.1/§9.4 统计同步更新（58→61 总，54→57 pending，P1 9→10，P2 2→3）；③ §7.3 M2 核心交付补"RISK 量化器 + 运行时可写 DB"；④ §7.4 M3 核心交付补"Streams 边界"；⑤ §6.1 合计 ~54→~57（pending，不含 cancelled 4）；⑥ §9.4 优先级统计同步。第四轮交叉审查 P0-A/P0-B/P1-1~P1-6 修复见 AGENTS.md v0.1.6/v0.1.7。 | pi-malf-riskbench v0.02 |
 | v0.1.4 | 2026-08-10 | 工作台功能扩展（D1+D2 用户裁决）：① 新增 T-M1-012/013 全市场横截面 RPC + 全市场 Tab（D2，工作台默认入口）；② 新增 T-M2-017 寿命排行榜 Tab + T-M2-018 回测绩效模块（D1 绩效放开 research_only）；③ 新增 T-M3-014 候选池 + T-M3-015 设置补全；④ §6.1/§7.6/§9.1/§9.4 统计同步（61→67 总，57→63 pending，P0 42→45，P1 11→14）；⑤ §7.6 执行顺序表重排（57→63 行）。对应 06-API v0.1.4（24 RPC / 17 registerTool）+ 09-UI v0.1.1（7 Tab）。 | pi-malf-riskbench v0.02 |
 | v0.1.5 | 2026-08-10 | 标的池扩展 D3 裁决（ETF 500+，实测 TDX 沪 916 + 深 1542 候选）：① 新增 T-M2-019 ETF 标的池清单（universe.json）+ T-M2-020 批量 ingest 管道扩展（v0.01 run_pipeline 分批参数化，每批 50 标的）+ T-M2-021 全市场验证与生产库扩库；② §6.1/§7.6/§9.1/§9.4 统计同步（67→70 总，63→66 pending，P0 45→48）；③ §7.6 执行顺序表重排（63→66 行，新增 41-43）。对应 05-ERD v0.1.3 + 07-Workflow v0.1.2。 | pi-malf-riskbench v0.02 |
+| v0.1.6 | 2026-08-10 | 56 字段契约扩展（v0.01 T9.15，malf-engine ec161db）+ 结构雷达：① 新增 T-M3-016 🎯 结构雷达 Tab（9 区块 100% 来自 56 字段 + 4 事件码，零外部数据）；② §6.1/§7.6/§9.1/§9.4 统计同步（70→71 总，66→67 pending，P0 48→49）；③ §7.6 执行顺序表重排（66→67 行）。对应 06-API v0.1.5 + 05-ERD v0.1.4 + 09-UI v0.1.2 + 08-Test v0.1.3。 | pi-malf-riskbench v0.02 |
 
 ---
 
