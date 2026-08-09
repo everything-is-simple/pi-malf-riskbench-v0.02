@@ -162,7 +162,7 @@ fixture（tests/fixtures/，人肉推导）
 | `ai_interpret_snapshot` | ai.* | 标注"AI 解读"；失败不阻塞；mock provider | T-UT-066 ~ T-UT-080 |
 | `ai_interpret_backtest` | ai.* | 标注"AI 解读"；research_only 边界；mock provider | T-UT-081 ~ T-UT-090 |
 | `ai_discover_rules` | ai.* | 信号发现辅助；不修改 MALF 引擎；mock provider | T-UT-091 ~ T-UT-100 |
-| `run_backtest_report` | bench.* | 运行 T4 确定性规则验证；不输出收益类指标；只读副本库 | T-UT-101 ~ T-UT-115 |
+| `run_backtest_report` | bench.* | 运行 T4 确定性规则验证；不输出收益类指标；只读副本库。**签名映射（A-03 修复）**：v0.01 `run_full_verification(db_path, symbols, timeframes)` 为批量签名（list 参数），Adapter `runBacktestVerification(symbol, timeframe)` 必须包一层单标的调用并传 db_path（`symbols=[symbol]`、`timeframes=[timeframe]`），不得透传（能力卡 §3 须记录两侧签名映射） | T-UT-101 ~ T-UT-115 |
 | `read_backtest_report` | bench.* | 读取报告；HTML 预览独立 CSP；不存在返回 None | T-UT-116 ~ T-UT-125 |
 | `export_csv` | viewer.* | 只读导出；路径穿透防护；空结果导出空文件 | T-UT-126 ~ T-UT-135 |
 
