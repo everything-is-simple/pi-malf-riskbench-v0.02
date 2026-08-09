@@ -1,24 +1,78 @@
-# Python / Node 临时文件
-__pycache__/
-*.py[cod]
-.pytest_cache/
+# 依赖
 node_modules/
+.pnpm-store/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
 
-# 本地运行状态与秘密
+# 运行数据（必须隔离，绝不进 Git）
+*.duckdb
+*.duckdb.wal
+*.duckdb.tmp
+*.parquet
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+runtime/
+runs/
+tmp/
+logs/
+cache/
+reports/
+
+# 环境与密钥
 .env
-.env.*
-!.env.example
-*.key
+.env.local
+.env.*.local
+credentials.json
 *.pem
+*.key
 
-# 本地构建和编辑器文件
-.DS_Store
-.vscode/
-.idea/
+# 构建产物
 dist/
 build/
+release/
+out/
+coverage/
+*.tsbuildinfo
 
-# v0.02 运行时目录（文档仓库不提交）
-var/
-state/
-.runtime/
+# 日志
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE/工具产物
+.idea/
+.vscode/
+.workbuddy/
+.pi-subagents/
+*.swp
+*.swo
+
+# 试炼场与运行时目录（不进入本仓）
+Z:/pi-malf-riskbench-v0.02-composer/
+Z:/pi-malf-riskbench-v0.02-runtime/
+
+# 参考仓库（只读，不进入本仓）
+H:/pi-references/
+Z:/ai-malf-riskbench-Definitive/
+Z:/ai-malf-riskbench-components/
+Z:/ai-malf-riskbench-data/
+Z:/ai-malf-riskbench-everyday/
+Z:/ai-malf-riskbench-history/
+Z:/ai-malf-riskbench--runtime/
+Z:/ai-malf-riskbench-worktrees/
+Z:/ai-malf-riskbench-backup/
+Z:/ai-malf-riskbench/
+Z:/new_tdx64/
+Z:/riskbench-data-old/
