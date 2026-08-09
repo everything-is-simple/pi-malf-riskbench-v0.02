@@ -1,7 +1,7 @@
 # 09-使用者介面-UI-Design
 
-**版本**：v0.1.0
-**日期**：2026-08-09
+**版本**：v0.1.1
+**日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **上游**：[02-PRD](./02-PRD-产品需求-Product-Requirements.md)、[03-架构设计](./03-架构设计-Architecture-Design.md)、[06-API](./06-API契约-API-Contracts.md)、[07-工作流](./07-工作流-Workflow.md)、[08-测试验收](./08-测试验收-Test-Plan.md)
 **下游**：[04-任务清单](./04-任务清单-Todo-List.md)
@@ -171,43 +171,62 @@ end:   [2026-08-04 ▼]
 
 ## §4 标签页结构
 
-### 4.1 总览（6 个 Tab）
+### 4.1 总览（7 个 Tab）
 
-主内容区顶部为 Tab 栏，共 6 个 Tab，按角色与触发条件排列：
+主内容区顶部为 Tab 栏，共 7 个 Tab，按角色与触发条件排列（D2 修复：新增全市场/排行榜，市场事实改名个股深度，图表并入个股深度）：
 
 | Tab | 角色 | 触发条件 | 主要 RPC | 默认 |
-|---|---|---|---|:--:|
-| 💬 AI 对话 | pi 原生 AI 承载 | 启动默认 | `ai_interpret_*` / 所有工具 | ✅ 默认 |
-| 📊 市场事实 | WaveStructuralSnapshot + signals 展示 | 选标的 | `query_snapshot` / `query_signals` | |
-| ⚠️ 风险声明 | 用户声明 + AI 矛盾提醒 | 选标的 | `declare_risk` / `list_risk_declarations` / `check_risk_contradiction` | |
-| 📋 回测报告 | T4 验证报告 + HTML 预览 | 用户触发 | `run_backtest_report` / `read_backtest_report` | |
-| 📈 图表 | 净值/回撤/信号标注 | 战役 2 | —（数据来自 `query_snapshot_range`） | |
-| ⚙️ 设置 | 模型/凭据/路径配置 | 用户触发 | `models_config_get/set` / `credentials_get/set` | |
+|---|---|---|---|---|:--:|
+| 📊 全市场 | 全标的×周期横截面排名 + 筛选（**工作台入口，D2**） | 启动默认 | `query_market_snapshot` / `query_symbol_list` | ✅ 默认 |
+| 🏆 排行榜 | Lifespan 双轨寿命排名 Top-N（**D2**） | 用户触发 | `query_rankings` | |
+| 💬 AI 对话 | pi 原生 AI 承载 | 用户触发 | `ai_interpret_*` / 所有工具 | |
+| 📈 个股深度 | 单标的 44 字段 + signals 事件流 + 区间历史 + 图表 | 下钻（点全市场行） | `query_snapshot` / `query_signals` / `query_snapshot_range` | |
+| ⚠️ 风险声明 | 用户声明 + AI 矛盾提醒 + RISK 量化 | 选标的 | `declare_risk` / `list_risk_declarations` / `check_risk_contradiction` / `quantify_risk` | |
+| 📋 回测报告 | T4 验证报告 + 绩效指标（D1）+ HTML 预览 | 用户触发 | `run_backtest_report` / `read_backtest_report` | |
+| ⚙️ 设置 | 模型/凭据/路径/标的池/绩效开关 | 用户触发 | `models_config_get/set` / `credentials_get/set` | |
 
 **Tab 通用规则**：
 - 切换 Tab 不卸载已加载数据（keep-alive），避免重复 RPC
 - 每个 Tab 顶部展示当前标的 + 周期 + 时间范围面包屑
 - 加载中展示骨架屏；错误展示安全编码中文消息（06-API §2.2）
 
-### 4.2 💬 AI 对话 Tab（默认，pi 原生 AI 承载）
+### 4.2 📊 全市场 Tab（全标的×周期横截面排名，D2 修复）
 
-启动默认 Tab，承载 pi 原生 AI（pi-coding-agent + pi-ai provider）。详见 §5。
+**工作台默认入口**。展示全部标的×周期最新快照的排名横截面，按 span_rank 降序，支持筛选（方向/状态/分位区间）与列排序。行点击下钻到 📈 个股深度。
 
-### 4.3 📊 市场事实 Tab（WaveStructuralSnapshot 44 字段 + signals 事件流）
+- 数据：`query_market_snapshot`（MarketSnapshotRowDTO[]，上限 200 行）
+- 列：标的·周期 / 方向 / 状态 / span_rank / range_rank / 动量 / 极端度（RISK 投影）/ reason_codes
+- 筛选：方向、状态（wave_alive/transition_active）、span_rank ≥ X、动量类别
+- 候选池：多选行加入候选池（T-M3-014），跨 Tab 批量回测/导出
 
-展示第一层市场事实权威，确定性数据，不可改写。详见 §6。
+### 4.3 🏆 排行榜 Tab（Lifespan 双轨寿命排名 Top-N，D2 修复）
 
-### 4.4 ⚠️ 风险声明 Tab（用户声明 + AI 矛盾提醒）
+展示 Wave/Range 双轨寿命排名（span/range/stagnation/range_evolution/range_resolution），支持历史窗口（全历史/近 N 期）与分位分布条形图。
+
+- 数据：`query_rankings`（RankingDTO[]）
+- 视图：Wave 跨度 Top10 / Wave 停滞 Top10 / Range 演化 Top10 三栏
+- 窗口：全历史 ▾ / 近 20 期 ▾（基于 bar_dt 过滤）
+- 点击条目 → 下钻 📈 个股深度
+
+### 4.4 💬 AI 对话 Tab（pi 原生 AI 承载）
+
+承载 pi 原生 AI（pi-coding-agent + pi-ai provider）。详见 §5。
+
+### 4.5 📈 个股深度 Tab（单标的 44 字段 + signals + 区间历史 + 图表，D2 修复）
+
+展示第一层市场事实权威，确定性数据，不可改写。由全市场/排行榜下钻进入。详见 §6。
+
+### 4.6 ⚠️ 风险声明 Tab（用户声明 + AI 矛盾提醒）
 
 展示第二层用户声明权威，用户主权，AI 不可修改 user_text。详见 §7。
 
-### 4.5 📋 回测报告 Tab（T4 验证报告 + HTML 预览）
+### 4.7 📋 回测报告 Tab（T4 验证报告 + 绩效指标 + HTML 预览，D1 修复）
 
-展示 T4 确定性规则验证报告，独立 CSP 预览 HTML。详见 §8。
+展示 T4 确定性规则验证报告（确定性验证 + **绩效指标区块（research_only，02-PRD §4.4）**），独立 CSP 预览 HTML。详见 §8。
 
-### 4.6 📈 图表 Tab（净值曲线/回撤曲线/信号标注，战役 2）
+### 4.8 📈 图表（并入个股深度 Tab，D2 修复）
 
-战役 2 交付，基于 `query_snapshot_range` 数据绘制：
+原独立图表 Tab 并入 📈 个股深度：区间历史走势 / 信号标注 / 排名演化曲线，基于 `query_snapshot_range` 数据绘制。
 
 | 图表 | 数据源 | 用途 |
 |---|---|---|
@@ -217,9 +236,9 @@ end:   [2026-08-04 ▼]
 
 > 图表库选型在战役 2 启动时定案；当前仅锁定数据来源与展示目标。
 
-### 4.7 ⚙️ 设置 Tab（模型配置/凭据管理/路径配置）
+### 4.9 ⚙️ 设置 Tab（模型/凭据/路径/标的池/绩效开关，D2 修复）
 
-需用户授权（system.* 路由需授权，06-API §7.2）。详见 §9。
+需用户授权（system.* 路由需授权，06-API §7.2）。配置项：模型 provider/凭据（DPAPI）、路径（DATA_ROOT/TDX_ROOT/runtime）、**标的池（D3 扩展待裁决）、绩效指标开关（D1，默认开，research_only 标记）**。详见 §9。
 
 ---
 
@@ -835,6 +854,7 @@ UI 层测试断言对齐 08-测试验收（待写）与 03-Architecture §7 安�
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | v0.1.0 | 2026-08-09 | 初始草案：三栏布局 + 6 Tab（AI 对话/市场事实/风险声明/回测报告/图表/设置）+ WaveStructuralSnapshot 44 字段按层分组展示 + signals 4 事件码 + honest degradation 展示规则 + 确定性展示 + pi-desktop 组件映射 + 省略组件 + INV-01~06 安全边界 + 防泄露 + AI 解读标注 + 桌面优先响应式 + UI 测试断言。输入：02-PRD §1.3/§6 + 03-Architecture §2/§3/§7 + 05-ERD §3 + 06-API §3/§5/§6 + pi-studybuddy §2 范式 |
+| v0.1.1 | 2026-08-10 | 工作台功能扩展（D1+D2 用户裁决）：§4.1 Tab 总览 6→7（📊 全市场默认入口 + 🏆 排行榜；市场事实改名📈 个股深度；📈 图表并入个股深度）；新增 §4.2 全市场 Tab / §4.3 排行榜 Tab；§4.9 设置 Tab 补标的池/绩效开关；回测 Tab 补绩效指标区块（D1 research_only）。对应 06-API v0.1.4（query_market_snapshot/query_rankings）+ 04-Todo T-M1-012/013 + T-M2-017/018。 |
 
 ---
 

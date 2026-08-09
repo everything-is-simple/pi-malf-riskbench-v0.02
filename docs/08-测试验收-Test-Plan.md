@@ -154,6 +154,8 @@ fixture（tests/fixtures/，人肉推导）
 | `query_signals` | malf.* | 正常输入返回事件流列表；空范围返回空数组；非法 timeframe 抛错 | T-UT-011 ~ T-UT-020 |
 | `query_symbol_list` | malf.* | 返回标的列表；DuckDB 只读不写 | T-UT-021 ~ T-UT-025 |
 | `query_timeframes` | malf.* | 返回 day/week/month；缺失标的返回空 | T-UT-026 ~ T-UT-030 |
+| `query_market_snapshot` | malf.* | **全市场横截面（D2 修复）**：全部标的×周期最新快照按 span_rank 降序；筛选 direction/state/min_span_rank 生效；上限 200 行；只读 DuckDB（D28）；None 排名附 reason_codes | **T-UT-146 ~ T-UT-155（追加段，编号位于 quantify_risk T-UT-136~145 之后）** |
+| `query_rankings` | malf.* | **寿命排行榜（D2 修复）**：metric ∈ {span, range, stagnation, range_evolution, range_resolution} 合法；非法 metric 抛 VALIDATION_ERROR；window 近 N 期过滤生效；Top-N 截断正确 | **T-UT-156 ~ T-UT-165（追加段）** |
 | `explain_snapshot` | malf.* | 字段引用 MALF v2.1；不输出预测 | T-UT-031 ~ T-UT-035 |
 | `declare_risk` | risk.* | 创建/修改/删除声明；用户主权（AI 不可修改 user_text）；幂等 | T-UT-036 ~ T-UT-050 |
 | `list_risk_declarations` | risk.* | 列出声明；按 created_at 排序；过滤 symbol/timeframe | T-UT-051 ~ T-UT-055 |
@@ -162,8 +164,8 @@ fixture（tests/fixtures/，人肉推导）
 | `ai_interpret_snapshot` | ai.* | 标注"AI 解读"；失败不阻塞；mock provider | T-UT-066 ~ T-UT-080 |
 | `ai_interpret_backtest` | ai.* | 标注"AI 解读"；research_only 边界；mock provider | T-UT-081 ~ T-UT-090 |
 | `ai_discover_rules` | ai.* | 信号发现辅助；不修改 MALF 引擎；mock provider | T-UT-091 ~ T-UT-100 |
-| `run_backtest_report` | bench.* | 运行 T4 确定性规则验证；不输出收益类指标；只读副本库。**签名映射（A-03 修复）**：v0.01 `run_full_verification(db_path, symbols, timeframes)` 为批量签名（list 参数），Adapter `runBacktestVerification(symbol, timeframe)` 必须包一层单标的调用并传 db_path（`symbols=[symbol]`、`timeframes=[timeframe]`），不得透传（能力卡 §3 须记录两侧签名映射） | T-UT-101 ~ T-UT-115 |
-| `read_backtest_report` | bench.* | 读取报告；HTML 预览独立 CSP；不存在返回 None | T-UT-116 ~ T-UT-125 |
+| `run_backtest_report` | bench.* | 运行 T4 确定性规则验证；**绩效模块（D1 修复）**；只读副本库。**签名映射（A-03 修复）**：v0.01 `run_full_verification(db_path, symbols, timeframes)` 为批量签名（list 参数），Adapter `runBacktestVerification(symbol, timeframe)` 必须包一层单标的调用并传 db_path（`symbols=[symbol]`、`timeframes=[timeframe]`），不得透传（能力卡 §3 须记录两侧签名映射） | T-UT-101 ~ T-UT-115 |
+| `read_backtest_report` | bench.* | 读取报告；HTML 预览独立 CSP；不存在返回 None；**绩效指标字段（D1）：performance.research_only=true 强制标记；performance 为空时前端隐藏绩效区块，不影响确定性结果** | T-UT-116 ~ T-UT-125 |
 | `export_csv` | viewer.* | 只读导出；路径穿透防护；空结果导出空文件 | T-UT-126 ~ T-UT-135 |
 
 **通用断言**（每个工具必须）：
@@ -488,7 +490,7 @@ fixture（tests/fixtures/，人肉推导）
 | INV-02 | 严格 CSP | `default-src 'self'` + `script-src 'self'` | Electron session 配置 | T-M0-006 | 立即停止 |
 | INV-03 | preload 受控桥接 | 仅 `exposeInMainWorld('piBridge')`，不暴露 Node API | preload.ts contextBridge 白名单 | T-M0-002 | 立即停止 |
 | INV-04 | credential-vault safeStorage | `safeStorage` Windows DPAPI 加密 | credential-vault.ts | T-M0-007 | 立即停止 |
-| INV-05 | Host RPC 契约化 | `api.ts` 完整接口，22 RPC 方法（六路由组 malf/risk/ai/bench/viewer/system） | contract.ts + ipcMain 白名单 | T-M0-005 | 立即停止 |
+| INV-05 | Host RPC 契约化 | `api.ts` 完整接口，24 RPC 方法（六路由组 malf/risk/ai/bench/viewer/system） | contract.ts + ipcMain 白名单 | T-M0-005 | 立即停止 |
 | INV-06 | HTML 预览独立 CSP | `form-action 'none'`（HTML_PREVIEW_CSP） | 预览窗口独立 session | T-M2-009 | 立即停止 |
 
 **执行方式**：
@@ -1042,6 +1044,7 @@ def test_缺失symbol抛VALIDATION_ERROR():
 |---|---|---|
 | v0.1.0 | 2026-08-09 | 初始草案：测试金字塔四层 + 关键断言矩阵 + 状态机测试矩阵 + 测试夹具 + 命名规范 + 合并 master 门槛 + G0-G3 门禁 + 性能基准 |
 | v0.1.1 | 2026-08-10 | 任务边界与容错审计 P0+P1 修复 + 第四轮交叉审查：§3.1 新增 quantify_risk 测试段 T-UT-136~145（P0-B）；§3.3 新增 T-UT-327/327a/327b Adapter 子进程崩溃恢复（P0-A，3 次重启 + 第 4 次 MALF_ENGINE_ERROR + 在途请求）；§3.3 新增 T-UT-331~337 quantify_risk 边界断言（P0-B）；§3.3 新增 T-UT-346/347 错误码边界区分（表不存在 DUCKDB_ERROR vs 行不存在 NOT_FOUND）；§5.8 INV-05 21→22 RPC 方法（P0-1，第四轮交叉审查）；§8.1 T-SM-001 重复 → T-UT-500（P0-3，第四轮交叉审查）。 |
+| v0.1.2 | 2026-08-10 | 工作台功能扩展（D1+D2 用户裁决）：§3.1 新增 query_market_snapshot / query_rankings 测试段 T-UT-146~155 / T-UT-156~165（D2 全市场横截面 + 排名，只读 DuckDB、筛选/窗口/非法 metric 断言）；§3.1 read_backtest_report 绩效断言（D1：performance.research_only=true 强制标记 + 空 performance 隐藏区块）；§5.1 新增全市场冒烟 T-SM-006/T-SM-007。 |
 
 ---
 

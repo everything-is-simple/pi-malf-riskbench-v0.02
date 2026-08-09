@@ -9,7 +9,7 @@
  *   2. INV-02 严格 CSP（default-src 'self' + script-src 'self'）   → T-M0-006 实现（安全沙箱）
  *   3. INV-03 preload 仅 exposeInMainWorld('piBridge')             → T-M0-002 实现（preload 受控桥接）
  *   4. INV-04 credential-vault 用 safeStorage（Windows DPAPI）     → T-M0-007 实现（credential-vault）
- *   5. INV-05 Host RPC 契约化（api.ts 完整接口，22 RPC 方法）       → T-M0-005 实现（contract RPC）
+ *   5. INV-05 Host RPC 契约化（api.ts 完整接口，24 RPC 方法）       → T-M0-005 实现（contract RPC）
  *   6. INV-06 HTML 预览独立 CSP（form-action 'none'）              → T-M2-009 实现（回测报告 Tab + HTML 预览独立 CSP）
  *
  * 当前阶段（design，src/ 未就绪）：
@@ -53,7 +53,7 @@ if (!fs.existsSync(windowPath)) {
   console.log("      INV-02 严格 CSP（default-src 'self' + script-src 'self'）→ T-M0-006 安全沙箱");
   console.log("      INV-03 preload 仅 exposeInMainWorld('piBridge') → T-M0-002 preload 受控桥接");
   console.log("      INV-04 credential-vault safeStorage（Windows DPAPI）→ T-M0-007 credential-vault");
-  console.log("      INV-05 Host RPC 契约化（api.ts 22 RPC 方法，路由组 malf/risk/ai/bench/viewer/system）→ T-M0-005 contract RPC");
+  console.log("      INV-05 Host RPC 契约化（api.ts 24 RPC 方法，路由组 malf/risk/ai/bench/viewer/system）→ T-M0-005 contract RPC");
   console.log("      INV-06 HTML 预览独立 CSP（form-action 'none'）→ T-M2-009 回测报告 Tab + HTML 预览独立 CSP");
   process.exit(0);
 }
@@ -135,15 +135,15 @@ check(
   "键名正则 /^modelProvider:[a-z0-9._-]{1,160}$/i 或 /^riskbench:[a-z0-9._-]{1,160}$/i",
 );
 
-// ---- INV-05：Host RPC 契约化（api.ts 完整接口，22 RPC 方法）----
+// ---- INV-05：Host RPC 契约化（api.ts 完整接口，24 RPC 方法）----
 const apiTs = readSource("src/contract/api.ts");
-// 统计 Api interface 中以 "namespace.method": 形式定义的方法（06-API §3 22 方法）
+// 统计 Api interface 中以 "namespace.method": 形式定义的方法（06-API §3 24 方法）
 const apiMethodCount = (apiTs.match(/^\s*"[a-zA-Z]+\.[a-zA-Z_]+"\s*:/gm) || []).length;
 check(
   "INV-05",
-  "Host RPC 契约化（api.ts 完整接口，22 RPC 方法）",
-  apiMethodCount >= 22,
-  `api.ts 方法数 ${apiMethodCount}（阈值 ≥ 22，06-API §3）`,
+  "Host RPC 契约化（api.ts 完整接口，24 RPC 方法）",
+  apiMethodCount >= 24,
+  `api.ts 方法数 ${apiMethodCount}（阈值 ≥ 24，06-API §3，D2 全市场新增 query_market_snapshot/query_rankings）`,
 );
 
 // 额外断言：六路由组前缀全覆盖（malf/risk/ai/bench/viewer/system）

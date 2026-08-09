@@ -117,9 +117,9 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 
 ## §3 RPC 方法表（按路由分组）
 
-> 共 22 个 RPC 方法（contract/api.ts 的 `interface Api`），方法名采用 `<route_group>.<action>` 风格。
+> 共 24 个 RPC 方法（contract/api.ts 的 `interface Api`），方法名采用 `<route_group>.<action>` 风格。
 >
-> **双层暴露说明**：22 个 RPC 方法是 renderer UI 视角的契约入口；其中 15 个同时暴露为 registerTool 工具供 AI agent 调用（03-Architecture §3.2）。7 个不暴露为 registerTool 的方法分两类：
+> **双层暴露说明**：24 个 RPC 方法是 renderer UI 视角的契约入口；其中 17 个同时暴露为 registerTool 工具供 AI agent 调用（03-Architecture §3.2）。7 个不暴露为 registerTool 的方法分两类：
 > - **安全隔离**（6 个）：`update_risk_declaration` / `delete_risk_declaration` / `models_config_get` / `models_config_set` / `credentials_get` / `credentials_set` —— AI 不可修改用户声明（三层权威第二层）或触碰凭据/系统配置。
 > - **RPC 专用**（1 个）：`query_snapshot_range` —— 范围查询仅供 UI 渲染图表，AI 用 `query_snapshot` 单点查询即可。
 
@@ -130,6 +130,8 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 | `query_signals` | malf.* | `{symbol, timeframe, start_dt, end_dt}` | `SignalDTO[]` | 只读 | ✅ | 查询事件流（4 事件码） |
 | `query_symbol_list` | malf.* | `{}` | `string[]` | 只读 | ✅ | 获取标的列表 |
 | `query_timeframes` | malf.* | `{symbol}` | `string[]` | 只读 | ✅ | 获取周期列表（day/week/month） |
+| `query_market_snapshot` | malf.* | `{timeframe?, direction?, state?, min_span_rank?, max_rows?}` | `MarketSnapshotRowDTO[]` | 只读 | ✅ | **全市场横截面（D2 修复）**：全部标的×周期最新快照，按 rank 分位分布排序，供全市场 Tab |
+| `query_rankings` | malf.* | `{timeframe?, metric, top_n?, window?}` | `RankingDTO[]` | 只读 | ✅ | **寿命排行榜（D2 修复）**：按 span/range/stagnation 排名 Top-N，支持历史窗口（全历史/近 N 期） |
 | `explain_snapshot` | malf.* | `{symbol, timeframe, bar_dt}` | `{explanation: string}` | 只读 | ✅ | 解释 snapshot 字段（引用 MALF v2.1，TS 原生静态查询） |
 | `declare_risk` | risk.* | `{symbol, timeframe, bar_dt, user_text, linked_snapshot_fields}` | `RiskDeclarationDTO` | 需会话 | ✅ | 创建风险声明 |
 | `list_risk_declarations` | risk.* | `{symbol?, timeframe?}` | `RiskDeclarationDTO[]` | 只读 | ✅ | 列出风险声明 |
@@ -148,7 +150,7 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 | `credentials_get` | system.* | `{key: string}` | `{has: bool}` | 需授权 | ❌（安全隔离） | 查询凭据是否存在（不回传明文） |
 | `credentials_set` | system.* | `{key: string, value: string}` | `{set: bool}` | 需授权 | ❌（安全隔离） | 设置凭据（DPAPI 加密） |
 
-> **registerTool 工具数**：15（✅ 标记的方法）。**RPC 专用方法数**：7（❌ 标记的方法）。合计 22。
+> **registerTool 工具数**：17（✅ 标记的方法）。**RPC 专用方法数**：7（❌ 标记的方法）。合计 24。
 
 ### 3.1 malf.* 路由组（MALF 查询工具，6 个）
 
@@ -161,6 +163,8 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 | `query_signals` | `{symbol, timeframe, start_dt, end_dt}` | `SignalDTO[]` | 4 事件码；按 event_dt 升序 |
 | `query_symbol_list` | `{}` | `string[]` | DuckDB SELECT DISTINCT symbol；当前 3 标的（sh510050/sh510300/sz159915） |
 | `query_timeframes` | `{symbol}` | `string[]` | 返回 `['day','week','month']` 子集 |
+| `query_market_snapshot` | `{timeframe?, direction?, state?, min_span_rank?, max_rows?}` | `MarketSnapshotRowDTO[]` | **全市场横截面（D2 修复，02-PRD 四层闭环全市场视角）**：全标的×周期最新快照；按 span_rank 降序；上限 200 行防内存膨胀；只读 DuckDB（D28） |
+| `query_rankings` | `{timeframe?, metric, top_n?, window?}` | `RankingDTO[]` | **寿命排行榜（D2 修复）**：metric ∈ {span, range, stagnation, range_evolution, range_resolution}；window 全历史/近 N 期；基于 44 字段 Lifespan 双轨排名 |
 | `explain_snapshot` | `{symbol, timeframe, bar_dt}` | `{explanation: string}` | 引用 MALF v2.1 字段权威解释；不含运行时指纹 |
 
 ### 3.2 risk.* 路由组（风险声明 + 量化工具，6 个）
@@ -193,7 +197,7 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 | 方法 | 请求 DTO | 响应 DTO | 约束 |
 |---|---|---|---|
 | `run_backtest_report` | `{symbol, timeframe}` | `{report_id: string}` | 触发 T4 验证；返回 report_id 供轮询/读取；超时 60 秒（P1-1 修复，见 §6.5 容错策略） |
-| `read_backtest_report` | `{report_id}` | `BacktestReportDTO` | 读取报告；不输出收益类指标（D19/战役 1 边界） |
+| `read_backtest_report` | `{report_id}` | `BacktestReportDTO` | 读取报告；**含绩效指标（D1 修复，research_only，02-PRD §4.4 用户裁决）** |
 
 ### 3.5 viewer.* 路由组（只读 Viewer 工具，1 个）
 
@@ -472,13 +476,25 @@ Adapter 层错误码是 §2.2 统一错误码的子集（不含 `NOT_FOUND`，�
   robustness_result?: object,            // 参数鲁棒性（可选，v0.01 run_full_verification 不含此项；
                                          // 独立函数 k_perturbation_report/threshold_perturbation_report
                                          // 可选集成，M2 设计时决定是否调用）
+  performance?: {                         // 绩效指标（D1 修复，research_only，02-PRD §4.4）
+    annualized_return?: number,           // 年化收益率（%）
+    sharpe_ratio?: number,                // 夏普比率
+    max_drawdown?: number,                // 最大回撤（%）
+    win_rate?: number,                    // 胜率（%）
+    profit_loss_ratio?: number,           // 盈亏比
+    trade_count?: number,                 // 交易次数
+    // ⚠ 研究验证用途标记（不可省略）
+    research_only: true
+  },
   lineage_hash: string,
   rule_versions: object
-  // ⛔ 不输出：收益类指标（胜率/综合分/买卖建议/仓位/PnL，D19 战役 1 边界）
+  // ⛔ 仍禁止：买卖建议/仓位/订单/PnL 作为决策输出（D19 边界，02-PRD §4.4 仅允许 research_only 研究展示）
 }
 ```
 
 > **落盘目标**（P1-3 修复）：v0.01 `run_full_verification(db_path, symbols, timeframes)` 纯内存返回 dict（实查 runner.py 确认），不落盘、无 report_id、无进度回调。v0.02 的 `report_id` 由 Adapter 生成（UUID），报告落盘到运行时沙箱 `Z:\pi-malf-riskbench-v0.02-runtime\reports\<report_id>.json`（JSONL 格式，与 v0.01 `canonical_report` 输出兼容）。`status: 'running'` 通过 `backtest.progress` Stream 推送进度（见 §5.3）。
+
+> **绩效指标来源**（D1 修复）：v0.01 malf-backtest 当前只做 T4 确定性验证（verify_sequence/crosscheck/audit，无收益计算）。绩效指标（夏普/回撤/胜率/盈亏比/年化）由 **T-M2-018 新增绩效模块**计算（基于 signals 事件序列 + snapshots，research_only，02-PRD §4.4）。performance 字段为空时（未启用或计算失败）前端隐藏绩效区块，不影响确定性验证结果展示（AI-06 失败降级原则）。
 
 **回测运行容错策略**（P1-1 修复）：
 
@@ -542,6 +558,54 @@ RISK 量化器从 WaveStructuralSnapshot 提取风险特征（02-PRD §2.2 RISK-
 - **阈值参数化**：extremity.threshold 默认 0.80（02-PRD RISK-01），可由用户在设置页调整，不硬编码到代码
 - **不评分不决策**：DTO 只输出特征值与提示文案，不输出综合交易分/买卖建议/仓位（02-PRD §2.2 / D19）
 - **失败降级**：snapshot 不存在 → `NOT_FOUND`；量化器内部异常 → `INTERNAL_ERROR`，提示重试
+
+### 6.8 MarketSnapshotRowDTO / RankingDTO（全市场横截面 + 寿命排行榜，D2 修复）
+
+**用途**：支撑全市场 Tab 与寿命排行榜 Tab（02-PRD 四层闭环全市场视角 + Lifespan 双轨排名），DuckDB 只读查询（D28）。
+
+```typescript
+// 全市场横截面行（query_market_snapshot 响应元素）
+interface MarketSnapshotRowDTO {
+  symbol: string,
+  timeframe: 'day' | 'week' | 'month',
+  bar_dt: string,                          // 最新快照日期
+  direction: 'up' | 'down' | null,
+  system_state: string,                    // wave_alive / transition_active 等
+  // Lifespan 双轨排名（44 字段直接投影）
+  wave_span_rank: number | null,
+  wave_range_rank: number | null,
+  wave_stagnation_rank: number | null,
+  range_evolution_rank: number | null,
+  range_resolution_distance_rank: number | null,
+  // RISK 量化器投影（P0-B，可选展示列）
+  risk?: {
+    extremity: number | null,              // 极端度（rank > 0.80 → 高风险）
+    momentum: 'accelerating' | 'decelerating' | 'flat' | null,
+    directional_advantage: 'self_dominant' | 'opposite_dominant' | 'balanced' | null
+  },
+  reason_codes: string[],                  // honest degradation 透传
+  lineage_hash: string                     // 可下钻到单标的快照（D29 原样）
+  // ⛔ 不含：runtime_fingerprint（D5）、完整 44 字段（下钻用 query_snapshot）
+}
+
+// 寿命排行榜条目（query_rankings 响应元素）
+interface RankingDTO {
+  metric: 'span' | 'range' | 'stagnation' | 'range_evolution' | 'range_resolution',
+  rank: number,                            // 1..N
+  symbol: string,
+  timeframe: 'day' | 'week' | 'month',
+  bar_dt: string,                          // 排名基于的快照日期
+  value: number | null,                    // 排名值（0-1 分位）
+  direction: 'up' | 'down' | null,
+  reason_codes: string[]
+}
+```
+
+**约束**：
+- 排名数据来自 DuckDB snapshots 表 44 字段 Lifespan 双轨（05-ERD §3.4/§3.5），**零引擎改动**（v0.01 已产出）
+- 只读（D28）；上限 200 行防内存膨胀（query_market_snapshot）
+- 未形成排名（None）的标的附 reason_codes 展示，不补零不估计（honest degradation）
+- 全市场视图的标的池 = query_symbol_list（当前 3 标的，D3 扩展待用户裁决）
 - **AI 可调用**：白名单 ✅（§7.3），AI 可读取量化结果用于解读，但不可修改 user_text（三层权威第二层）
 
 ---
@@ -552,7 +616,7 @@ RISK 量化器从 WaveStructuralSnapshot 提取风险特征（02-PRD §2.2 RISK-
 
 | 路由组 | 子系统 | 方法数 | 说明 |
 |---|---|:--:|---|
-| `malf.*` | MALF 查询 | 6 | 只读，封装 v0.01 引擎/数据/信号查询 |
+| `malf.*` | MALF 查询 | 8 | 只读，封装 v0.01 引擎/数据/信号查询 + 全市场横截面/排名（D2） |
 | `risk.*` | 风险声明 + 量化 | 6 | 第二层用户声明 + RISK 量化器，AI 只读不改 |
 | `ai.*` | AI 解读 | 3 | 第三层 AI 解读，必须标注 |
 | `bench.*` | 回测报告 | 2 | 只读，T4 确定性规则验证 |
@@ -563,7 +627,7 @@ RISK 量化器从 WaveStructuralSnapshot 提取风险特征（02-PRD §2.2 RISK-
 
 | 权限级别 | 适用路由 | 说明 |
 |---|---|---|
-| **只读**（无需授权） | `malf.*` / `bench.read*` / `viewer.*` / `risk.list_risk_declarations` / `risk.check_risk_contradiction` / `risk.quantify_risk` | 单用户单机，只读查询无需授权（quantify_risk 只读 snapshot 不修改引擎） |
+| **只读**（无需授权） | `malf.*` / `bench.read*` / `viewer.*` / `risk.list_risk_declarations` / `risk.check_risk_contradiction` / `risk.quantify_risk` | 单用户单机，只读查询无需授权（quantify_risk 只读 snapshot 不修改引擎；全市场/排名查询只读 DuckDB，D28） |
 | **需会话**（用户会话） | `risk.declare_risk` / `risk.update_risk_declaration` / `risk.delete_risk_declaration` / `ai.*` | 写入用户声明或调用 AI，需活跃用户会话 |
 | **需授权**（用户明确授权） | `system.*`（模型配置/凭据管理） | 涉及凭据与系统配置，需用户明确授权 |
 
@@ -578,11 +642,11 @@ RISK 量化器从 WaveStructuralSnapshot 提取风险特征（02-PRD §2.2 RISK-
 
 AI agent 经 registerTool 调用工具时受 **白名单 + 黑名单** 双重约束，由 `before_tool_call` 钩子（03-Arch §3.3）在工具执行前拦截：
 
-**白名单（15 个，AI 可调用）**：
+**白名单（17 个，AI 可调用）**：
 
 | 路由组 | 工具名 | 说明 |
 |---|---|---|
-| malf.* | `query_snapshot` / `query_signals` / `query_symbol_list` / `query_timeframes` / `explain_snapshot` | 只读市场事实查询（第一层权威） |
+| malf.* | `query_snapshot` / `query_signals` / `query_symbol_list` / `query_timeframes` / `query_market_snapshot` / `query_rankings` / `explain_snapshot` | 只读市场事实查询（第一层权威）+ 全市场横截面/排名（D2） |
 | risk.* | `declare_risk` / `list_risk_declarations` / `check_risk_contradiction` / `quantify_risk` | 声明创建 + 只读列表 + 矛盾检测 + RISK 量化（只读 snapshot） |
 | ai.* | `ai_interpret_snapshot` / `ai_interpret_backtest` / `ai_discover_rules` | AI 解读（必须标注，第三层权威） |
 | bench.* | `run_backtest_report` / `read_backtest_report` | 只读回测验证 |
@@ -604,7 +668,7 @@ AI agent 经 registerTool 调用工具时受 **白名单 + 黑名单** 双重约
 - `before_tool_call` 钩子（03-Arch §3.3）在每次 `registerTool` execute 前校验工具名是否在白名单内
 - 黑名单工具被调用时 → 钩子返回 `terminate: true` + 安全错误码 `VALIDATION_ERROR`（"AI 无权调用此工具"）
 - 白名单 + 黑名单与 §3 "暴露为 registerTool" 列严格一致（15 ✅ / 7 ❌）
-- `check-contract-coverage.mjs` AST 校验断言：registerTool 注册的工具集 = 白名单 15 个（§8.1 校验项"权限标注"）
+- `check-contract-coverage.mjs` AST 校验断言：registerTool 注册的工具集 = 白名单 17 个（§8.1 校验项"权限标注"）
 
 ---
 
@@ -616,9 +680,9 @@ AI agent 经 registerTool 调用工具时受 **白名单 + 黑名单** 双重约
 
 | 校验项 | 断言 | 失败处理 |
 |---|---|---|
-| 方法覆盖 | `contract/api.ts` 的 `interface Api` 方法数 = §3 RPC 方法表方法数（22） | 阻断合并 |
+| 方法覆盖 | `contract/api.ts` 的 `interface Api` 方法数 = §3 RPC 方法表方法数（24） | 阻断合并 |
 | 路由组一致 | 每个方法名前缀匹配 §7.1 路由组（malf/risk/ai/bench/viewer/system） | 阻断合并 |
-| registerTool 白名单 | registerTool 注册的工具集 = §7.3 白名单 15 个（不含黑名单 7 个） | 阻断合并 |
+| registerTool 白名单 | registerTool 注册的工具集 = §7.3 白名单 17 个（不含黑名单 7 个） | 阻断合并 |
 | 信封形状 | registerTool execute 返回 `{content, details, usage?, terminate?}` | 阻断合并 |
 | 错误码枚举 | 错误 throw 且映射到 §2.2 五码之一 | 阻断合并 |
 | DTO 防泄露 | `WaveStructuralSnapshotDTO` 类型定义不含 `runtime_fingerprint` 字段（D5） | 阻断合并 |
@@ -649,6 +713,7 @@ check-contract-coverage.mjs
 | v0.1.1 | 2026-08-09 | P0 审计修复：① §3 RPC 方法表新增"暴露为 registerTool"列（14 ✅ / 7 ❌，双层暴露说明，P0-11）；② §4.2 Adapter 方法表移除 `explainSnapshot`（TS 原生静态查询，非子进程调用，与 03-Arch §4.1 / 11-组件装配 §5.3 一致，P0-9）；③ §4.3 新增 Adapter 签名包装责任说明（参数/返回值/错误码/lineage_hash 透传，P0-10）；④ §7.3 新增 AI agent 工具调用权限边界（白名单 14 + 黑名单 7 + before_tool_call 执行机制，P0-8）；⑤ §8.1 新增 registerTool 白名单 AST 校验项。审计洞集见 .record/ 实施记录。 |
 | v0.1.2 | 2026-08-09 | 第三轮交叉审查修复：§5 Streams 边界实现说明（§5.1/5.2 v0.1 预留，§5.3/5.4 v0.1 实现，P2-1）；§6.5 BacktestReportDTO robustness_result 改可选 + 落盘目标说明（P1-3，实查 runner.py 纯内存返回）；§6.4 ai_interpretations 孤儿表关系说明（P2-4）；§3 双层暴露分类 5+2→6+1（O-3）。 |
 | v0.1.3 | 2026-08-10 | 任务边界与容错审计 P0+P1 修复：§3.2 新增 quantify_risk 方法（risk.* 路由组 5→6，RPC 21→22，registerTool 14→15，P0-B）；§4.1 子进程崩溃恢复策略（P0-A，4 阶段表）；§6.5 回测运行容错策略（P1-1，60 秒超时 + 子进程崩溃 + 窗口关闭 + 磁盘写失败）；§6.7 RiskQuantifierDTO（P0-B，extremity/momentum/directional_advantage/joint_risk_alert + lineage_hash/rule_versions 透传）；§6.4 RiskDeclarationDTO linked_fields→linked_snapshot_fields（P1-2，第四轮交叉审查，与 05-ERD §5.1 表 schema 一致）；§6.2 WaveStructuralSnapshotDTO snapshot_id→bar_index（P1-3，第四轮交叉审查，与 05-ERD §3.1 表 schema 一致）；§6.5 交叉引用 §5.2→§5.3（P1-4，第四轮交叉审查，backtest.progress 在 §5.3）。 |
+| v0.1.4 | 2026-08-10 | 工作台功能扩展（D1+D2 用户裁决）：§3 新增 query_market_snapshot / query_rankings（malf.* 6→8，RPC 22→24，registerTool 15→17，D2 全市场落地）；§3.4/§6.5 回测绩效指标放开（D1，research_only，02-PRD §4.4 语义恢复，performance 字段可选 + research_only:true 强制标记）；§6.8 新增 MarketSnapshotRowDTO / RankingDTO；§7.1 malf 8 + §7.3 白名单 17 + §8.1 AST 校验 24/17 同步。对应 04-Todo T-M1-012/013 + T-M2-017/018 新任务。 |
 
 ---
 
