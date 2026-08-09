@@ -153,7 +153,7 @@ fixture（tests/fixtures/，人肉推导）
 | `query_snapshot` | malf.* | 正常输入返回 56 字段形状；缺失 symbol 抛 VALIDATION_ERROR；返回 `void`（registerTool） | T-UT-001 ~ T-UT-010 |
 | `query_signals` | malf.* | 正常输入返回事件流列表；空范围返回空数组；非法 timeframe 抛错 | T-UT-011 ~ T-UT-020 |
 | `query_symbol_list` | malf.* | 返回标的列表；DuckDB 只读不写 | T-UT-021 ~ T-UT-025 |
-| `query_timeframes` | malf.* | 返回 day/week/month；缺失标的返回空 | T-UT-026 ~ T-UT-030 |
+| `query_timeframes` | malf.* | 返回 day/week（month 废弃不返回）；缺失标的返回空 | T-UT-026 ~ T-UT-030 |
 | `query_market_snapshot` | malf.* | **全市场横截面（D2 修复）**：全部标的×周期最新快照按 span_rank 降序；筛选 direction/state/min_span_rank 生效；上限 200 行；只读 DuckDB（D28）；None 排名附 reason_codes | **T-UT-146 ~ T-UT-155（追加段，编号位于 quantify_risk T-UT-136~145 之后）** |
 | `query_rankings` | malf.* | **寿命排行榜（D2 修复）**：metric ∈ {span, range, stagnation, range_evolution, range_resolution} 合法；非法 metric 抛 VALIDATION_ERROR；window 近 N 期过滤生效；Top-N 截断正确 | **T-UT-156 ~ T-UT-165（追加段）** |
 | `explain_snapshot` | malf.* | 字段引用 MALF v2.1；不输出预测 | T-UT-031 ~ T-UT-035 |
@@ -399,7 +399,7 @@ fixture（tests/fixtures/，人肉推导）
 | T-SM-001 | query_snapshot 冒烟 | 查询 sh510050/day 返回 56 字段 |
 | T-SM-002 | query_signals 冒烟 | 查询事件流返回 4 事件码 |
 | T-SM-003 | query_symbol_list 冒烟 | 返回 3 标的（sh510050/sh510300/sz159915） |
-| T-SM-004 | query_timeframes 冒烟 | 返回 day/week/month |
+| T-SM-004 | query_timeframes 冒烟 | 返回 day/week（month 废弃） |
 | T-SM-005 | 数据用途 research_only | 查询结果 usage=research_only/stale_research_only |
 
 ### 5.2 风险声明冒烟
@@ -566,7 +566,7 @@ tests/e2e/
 | T-E2E-003 | 选标的 sh510050 | 点击标的列表 | 中栏加载该标的数据 |
 | T-E2E-004 | 查看 day 快照 | 选 day 周期 | 显示 56 字段快照 |
 | T-E2E-005 | 查看事件流 | 切换事件流 Tab | 显示 4 事件码事件流 |
-| T-E2E-006 | 切换 week/month | 选 week/month | 显示对应周期快照 |
+| T-E2E-006 | 切换 week（month 废弃） | 选 day/week | 显示对应周期快照 |
 
 ### 6.3 风险声明主路径
 

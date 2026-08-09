@@ -72,7 +72,7 @@ v0.02 采用三栏 + 状态栏的桌面布局，参考 pi-studybuddy §2.1 三�
 │  周期选择    │  │    Tab 内容区             ││  lineage    │
 │  ○ day      │  │                          ││  rule_ver   │
 │  ○ week     │  │                          ││  usage      │
-│  ○ month     │  └──────────────────────────┘│  freshness  │
+│  ○ month(废) │  └──────────────────────────┘│  freshness  │
 │             │                              │             │
 │  时间范围    │  ┌──────────────────────────┐│             │
 │  start:     │  │  输入区 / 操作区          ││             │
@@ -138,13 +138,13 @@ v0.02 单机只读场景下，下列 pi-desktop 组件**明确省略**，不进�
 
 ### 3.2 周期选择
 
-周期来自 `query_timeframes`（返回 `['day','week','month']` 子集），单选：
+周期来自 `query_timeframes`（返回 `['day','week']` 子集，month 废弃），单选：
 
 ```
 周期选择
 ○ day     日线
 ○ week    周线
-○ month   月线
+○ month   月线（废弃，历史可查）
 ```
 
 **约束**：
@@ -339,7 +339,7 @@ AI 在对话中可自主调用 registerTool 工具（03-Architecture §3.2），
 | # | 字段 | 类型 | 展示 |
 |---|---|---|---|
 | 1 | symbol | str | 文本（如 sh510050） |
-| 2 | timeframe | str | 文本（day/week/month） |
+| 2 | timeframe | str | 文本（day/week 生效；month 废弃） |
 | 3 | bar_dt | str | ISO 日期 |
 | 4 | bar_index | int | 整数 |
 
@@ -883,7 +883,7 @@ UI 层测试断言对齐 08-测试验收（待写）与 03-Architecture §7 安�
 | 12 | 回测报告不输出收益类指标 | DTO 类型 AST + UI 渲染断言 | D19 |
 | 13 | AI 不可修改 user_text | 权限模型断言（system.* 对 AI 不可见） | S33 |
 | 14 | 标的列表 = 3 标的 | UI 渲染断言 | 05-ERD §1.4 |
-| 15 | 周期 = day/week/month | UI 渲染断言 | 05-ERD §1.4 |
+| 15 | 周期 = day/week（month 废弃） | UI 渲染断言 | 05-ERD §1.4 |
 
 > E2E 测试用 vitest + Electron（与 pi-studybuddy 08-Test §6 范式一致，01-TRD §2.2 / 08-Test §6，非 Playwright）；安全不变量由 `check-desktop-security.mjs` 硬断言。
 

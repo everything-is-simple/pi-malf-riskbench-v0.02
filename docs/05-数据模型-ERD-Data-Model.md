@@ -47,7 +47,7 @@ v0.02 数据层完全继承 v0.01 的 DuckDB 生产库，新增表仅用于风�
 | 维度 | 值 |
 |---|---|
 | 标的 | 3 个（sh510050 / sh510300 / sz159915）——D3 扩展目标 ETF 500+（见 T-M2-019~021） |
-| 周期 | day / week / month（3 周期） |
+| 周期 | day / week 生效；month 废弃（保留历史数据不删，新 ingest 不跑；用户裁决 2026-08-10）；hour 规划（实战级，T-M3-017） |
 | snapshots 行数 | 15397 行 |
 | signals 事件数 | 2835 事件 |
 | usage 分布 | 全 research_only / stale_research_only |
@@ -89,7 +89,7 @@ v0.02 数据层完全继承 v0.01 的 DuckDB 生产库，新增表仅用于风�
 |---|---|---|---|
 | 1 | `signal_id` | VARCHAR (PK) | 事件唯一标识 |
 | 2 | `symbol` | VARCHAR | 标的代码 |
-| 3 | `timeframe` | VARCHAR | 周期（day/week/month） |
+| 3 | `timeframe` | VARCHAR | 周期（day/week 生效；month 废弃，历史数据保留） |
 | 4 | `bar_dt` | VARCHAR | 关联 bar 时间 |
 | 5 | `event_type` | VARCHAR | 事件类型（4 码，见下表） |
 | 6 | `detail` | JSON | 事件详情 |
@@ -125,7 +125,7 @@ v0.02 数据层完全继承 v0.01 的 DuckDB 生产库，新增表仅用于风�
 | # | 字段名 | 类型 | 说明 |
 |---|---|---|---|
 | 1 | `symbol` | str | 标的代码（如 sh510050） |
-| 2 | `timeframe` | str | 周期（day/week/month） |
+| 2 | `timeframe` | str | 周期（day/week 生效；month 废弃） |
 | 3 | `bar_dt` | str | bar 时间戳（严格递增，D12） |
 | 4 | `bar_index` | int | bar 序号（从 0 起） |
 
@@ -296,7 +296,7 @@ CoreStateSnapshot 是 MALF 引擎 Core 层的内部状态对象，**不直接持
 |---|---|---|---|---|
 | 1 | `declaration_id` | VARCHAR | PK | 唯一标识 |
 | 2 | `symbol` | VARCHAR | NOT NULL | 标的代码 |
-| 3 | `timeframe` | VARCHAR | NOT NULL | 周期（day/week/month） |
+| 3 | `timeframe` | VARCHAR | NOT NULL | 周期（day/week 生效；month 废弃） |
 | 4 | `bar_dt` | VARCHAR | NOT NULL | 关联 bar 时间 |
 | 5 | `user_text` | TEXT | NOT NULL | 用户手写或模板辅助的声明文本 |
 | 6 | `linked_snapshot_fields` | JSON | NOT NULL | 关联的 snapshot 字段（如 rank/label） |

@@ -129,7 +129,7 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 | `query_snapshot_range` | malf.* | `{symbol, timeframe, start_dt, end_dt}` | `WaveStructuralSnapshotDTO[]` | 只读 | ❌（RPC 专用） | 查询 snapshot 范围 |
 | `query_signals` | malf.* | `{symbol, timeframe, start_dt, end_dt}` | `SignalDTO[]` | 只读 | ✅ | 查询事件流（4 事件码） |
 | `query_symbol_list` | malf.* | `{}` | `string[]` | 只读 | ✅ | 获取标的列表 |
-| `query_timeframes` | malf.* | `{symbol}` | `string[]` | 只读 | ✅ | 获取周期列表（day/week/month） |
+| `query_timeframes` | malf.* | `{symbol}` | `string[]` | 只读 | ✅ | 获取周期列表（day/week 生效；month 废弃不返回；hour 规划） |
 | `query_market_snapshot` | malf.* | `{timeframe?, direction?, state?, min_span_rank?, max_rows?}` | `MarketSnapshotRowDTO[]` | 只读 | ✅ | **全市场横截面（D2 修复）**：全部标的×周期最新快照，按 rank 分位分布排序，供全市场 Tab |
 | `query_rankings` | malf.* | `{timeframe?, metric, top_n?, window?}` | `RankingDTO[]` | 只读 | ✅ | **寿命排行榜（D2 修复）**：按 span/range/stagnation 排名 Top-N，支持历史窗口（全历史/近 N 期） |
 | `explain_snapshot` | malf.* | `{symbol, timeframe, bar_dt}` | `{explanation: string}` | 只读 | ✅ | 解释 snapshot 字段（引用 MALF v2.1，TS 原生静态查询） |
@@ -158,11 +158,11 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 
 | 方法 | 请求 DTO | 响应 DTO | 约束 |
 |---|---|---|---|
-| `query_snapshot` | `{symbol: string, timeframe: 'day'\|'week'\|'month', bar_dt: string}` | `WaveStructuralSnapshotDTO` | PK(symbol, timeframe, bar_dt)；不暴露 runtime_fingerprint（D5） |
+| `query_snapshot` | `{symbol: string, timeframe: 'day'\|'week', bar_dt: string}` | `WaveStructuralSnapshotDTO` | PK(symbol, timeframe, bar_dt)；不暴露 runtime_fingerprint（D5）；month 废弃（历史可查） |
 | `query_snapshot_range` | `{symbol, timeframe, start_dt, end_dt}` | `WaveStructuralSnapshotDTO[]` | 范围按 bar_dt 升序；上限 1000 条防内存膨胀 |
 | `query_signals` | `{symbol, timeframe, start_dt, end_dt}` | `SignalDTO[]` | 4 事件码；按 event_dt 升序 |
 | `query_symbol_list` | `{}` | `string[]` | DuckDB SELECT DISTINCT symbol；当前 3 标的（sh510050/sh510300/sz159915），D3 扩展后 500+ ETF（标的池清单 `config/universe.json`，T-M2-019） |
-| `query_timeframes` | `{symbol}` | `string[]` | 返回 `['day','week','month']` 子集 |
+| `query_timeframes` | `{symbol}` | `string[]` | 返回 `['day','week']` 子集（month 废弃不返回） |
 | `query_market_snapshot` | `{timeframe?, direction?, state?, min_span_rank?, max_rows?}` | `MarketSnapshotRowDTO[]` | **全市场横截面（D2 修复，02-PRD 四层闭环全市场视角）**：全标的×周期最新快照；按 span_rank 降序；上限 200 行防内存膨胀；只读 DuckDB（D28） |
 | `query_rankings` | `{timeframe?, metric, top_n?, window?}` | `RankingDTO[]` | **寿命排行榜（D2 修复）**：metric ∈ {span, range, stagnation, range_evolution, range_resolution}；window 全历史/近 N 期；基于 56 字段 Lifespan 双轨排名（含 T9.15 progress_rank） |
 | `explain_snapshot` | `{symbol, timeframe, bar_dt}` | `{explanation: string}` | 引用 MALF v2.1 字段权威解释；不含运行时指纹 |
@@ -376,7 +376,7 @@ Adapter 层错误码是 §2.2 统一错误码的子集（不含 `NOT_FOUND`，�
 {
   // 身份（4）
   symbol: string,
-  timeframe: 'day' | 'week' | 'month',
+  timeframe: 'day' | 'week',  // month 废弃（保留历史数据只读可查）
   bar_dt: string,                        // ISO 日期
   bar_index: number,                     // bar 序号（从 0 起，与 05-ERD §3.1 表 schema 一致）
 
@@ -467,7 +467,7 @@ Adapter 层错误码是 §2.2 统一错误码的子集（不含 `NOT_FOUND`，�
 {
   signal_id: string,
   symbol: string,
-  timeframe: 'day' | 'week' | 'month',
+  timeframe: 'day' | 'week',  // month 废弃（保留历史数据只读可查）
   event_code: string,                    // 4 事件码之一
   event_dt: string,                      // ISO 8601
   bar_dt: string,
@@ -484,7 +484,7 @@ Adapter 层错误码是 §2.2 统一错误码的子集（不含 `NOT_FOUND`，�
 {
   declaration_id: string,
   symbol: string,
-  timeframe: 'day' | 'week' | 'month',
+  timeframe: 'day' | 'week',  // month 废弃（保留历史数据只读可查）
   bar_dt: string,
   user_text: string,                     // 用户手写/模板辅助，AI 不可改
   linked_snapshot_fields: string[],       // 关联 snapshot 字段（如 rank/label，与 05-ERD §5.1 表 schema 一致）
@@ -507,7 +507,7 @@ Adapter 层错误码是 §2.2 统一错误码的子集（不含 `NOT_FOUND`，�
 {
   report_id: string,
   symbol: string,
-  timeframe: 'day' | 'week' | 'month',
+  timeframe: 'day' | 'week',  // month 废弃（保留历史数据只读可查）
   generated_at: string,                  // ISO 8601
   status: 'running' | 'completed' | 'failed',
   verify_sequence_result: object,        // 触发序列验证
@@ -567,7 +567,7 @@ RISK 量化器从 WaveStructuralSnapshot 提取风险特征（02-PRD §2.2 RISK-
 ```typescript
 {
   symbol: string,
-  timeframe: 'day' | 'week' | 'month',
+  timeframe: 'day' | 'week',  // month 废弃（保留历史数据只读可查）
   bar_dt: string,                         // ISO 8601，关联 snapshot
   extremity: {                            // RISK-01：极端度（P1 视图）
     rank: number,                         // 0.00-1.00，来自 snapshot.rank
@@ -607,7 +607,7 @@ RISK 量化器从 WaveStructuralSnapshot 提取风险特征（02-PRD §2.2 RISK-
 // 全市场横截面行（query_market_snapshot 响应元素）
 interface MarketSnapshotRowDTO {
   symbol: string,
-  timeframe: 'day' | 'week' | 'month',
+  timeframe: 'day' | 'week',  // month 废弃（保留历史数据只读可查）
   bar_dt: string,                          // 最新快照日期
   direction: 'up' | 'down' | null,
   system_state: string,                    // wave_alive / transition_active 等
@@ -633,7 +633,7 @@ interface RankingDTO {
   metric: 'span' | 'range' | 'stagnation' | 'range_evolution' | 'range_resolution',
   rank: number,                            // 1..N
   symbol: string,
-  timeframe: 'day' | 'week' | 'month',
+  timeframe: 'day' | 'week',  // month 废弃（保留历史数据只读可查）
   bar_dt: string,                          // 排名基于的快照日期
   value: number | null,                    // 排名值（0-1 分位）
   direction: 'up' | 'down' | null,
