@@ -161,7 +161,7 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 | `query_snapshot` | `{symbol: string, timeframe: 'day'\|'week'\|'month', bar_dt: string}` | `WaveStructuralSnapshotDTO` | PK(symbol, timeframe, bar_dt)；不暴露 runtime_fingerprint（D5） |
 | `query_snapshot_range` | `{symbol, timeframe, start_dt, end_dt}` | `WaveStructuralSnapshotDTO[]` | 范围按 bar_dt 升序；上限 1000 条防内存膨胀 |
 | `query_signals` | `{symbol, timeframe, start_dt, end_dt}` | `SignalDTO[]` | 4 事件码；按 event_dt 升序 |
-| `query_symbol_list` | `{}` | `string[]` | DuckDB SELECT DISTINCT symbol；当前 3 标的（sh510050/sh510300/sz159915） |
+| `query_symbol_list` | `{}` | `string[]` | DuckDB SELECT DISTINCT symbol；当前 3 标的（sh510050/sh510300/sz159915），D3 扩展后 500+ ETF（标的池清单 `config/universe.json`，T-M2-019） |
 | `query_timeframes` | `{symbol}` | `string[]` | 返回 `['day','week','month']` 子集 |
 | `query_market_snapshot` | `{timeframe?, direction?, state?, min_span_rank?, max_rows?}` | `MarketSnapshotRowDTO[]` | **全市场横截面（D2 修复，02-PRD 四层闭环全市场视角）**：全标的×周期最新快照；按 span_rank 降序；上限 200 行防内存膨胀；只读 DuckDB（D28） |
 | `query_rankings` | `{timeframe?, metric, top_n?, window?}` | `RankingDTO[]` | **寿命排行榜（D2 修复）**：metric ∈ {span, range, stagnation, range_evolution, range_resolution}；window 全历史/近 N 期；基于 44 字段 Lifespan 双轨排名 |
