@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 /**
- * pi-malf-riskbench-v0.02 桌面安全不变量校验（AGENTS.md §9.6 + 03-Arch §7 + 08-Test §5.7）
+ * pi-malf-riskbench-v0.02 桌面安全不变量校验（AGENTS.md §9.6 + 03-Arch §7 + 08-Test §5.8）
  *
  * 硬断言脚本：静态审计 src/ 关键安全配置，任一断言失败立即退出（非零码）。
  *
- * 六条不变量（INV-01 ~ INV-06，03-Arch §7 + 01-TRD §5.5）：
- *   1. INV-01 sandbox:true（webPreferences）                       → T-M0-001 实现
- *   2. INV-02 严格 CSP（default-src 'self' + script-src 'self'）   → T-M0-001 实现
- *   3. INV-03 preload 仅 exposeInMainWorld('piBridge')             → T-M0-001 实现
- *   4. INV-04 credential-vault 用 safeStorage（Windows DPAPI）     → T-M0-003 实现
- *   5. INV-05 Host RPC 契约化（api.ts 完整接口，21 RPC 方法）       → T-M0-002 实现
- *   6. INV-06 HTML 预览独立 CSP（form-action 'none'）              → T-M0-009 实现
+ * 六条不变量（INV-01 ~ INV-06，03-Arch §7 + 01-TRD §5.5，task-id 映射对齐 04-Todo §5.2）：
+ *   1. INV-01 sandbox:true（webPreferences）                       → T-M0-006 实现（安全沙箱）
+ *   2. INV-02 严格 CSP（default-src 'self' + script-src 'self'）   → T-M0-006 实现（安全沙箱）
+ *   3. INV-03 preload 仅 exposeInMainWorld('piBridge')             → T-M0-002 实现（preload 受控桥接）
+ *   4. INV-04 credential-vault 用 safeStorage（Windows DPAPI）     → T-M0-007 实现（credential-vault）
+ *   5. INV-05 Host RPC 契约化（api.ts 完整接口，22 RPC 方法）       → T-M0-005 实现（contract RPC）
+ *   6. INV-06 HTML 预览独立 CSP（form-action 'none'）              → T-M2-009 实现（回测报告 Tab + HTML 预览独立 CSP）
  *
  * 当前阶段（design，src/ 未就绪）：
  *   - src/main/window.ts 不存在 → graceful skip（退出码 0）
@@ -23,7 +23,7 @@
  *   - pi-studybuddy/scripts/check-desktop-security.mjs（阶段自适应范式）
  *   - AGENTS.md §9.6（安全不变量六条）
  *   - docs/03-架构设计 §7（安全不变量六条 SoT）
- *   - docs/08-测试验收 §5.7（六条不变量断言）
+ *   - docs/08-测试验收 §5.8（六条不变量断言）
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -48,13 +48,13 @@ const protocolPath = path.join(root, "src/main/protocol.ts");
 if (!fs.existsSync(windowPath)) {
   console.log("OK: 桌面壳骨架未就绪（src/main/window.ts 不存在），跳过安全不变量校验");
   console.log("    （M0 骨架 T-M0-001 落地后，本脚本将自动启用六条不变量完整校验）");
-  console.log("    预期六条不变量（03-Arch §7）：");
-  console.log("      INV-01 sandbox:true（webPreferences）");
-  console.log("      INV-02 严格 CSP（default-src 'self' + script-src 'self'）");
-  console.log("      INV-03 preload 仅 exposeInMainWorld('piBridge')");
-  console.log("      INV-04 credential-vault safeStorage（Windows DPAPI）");
-  console.log("      INV-05 Host RPC 契约化（api.ts 21 RPC 方法，路由组 malf/risk/ai/bench/viewer/system）");
-  console.log("      INV-06 HTML 预览独立 CSP（form-action 'none'）");
+  console.log("    预期六条不变量（03-Arch §7，task-id 映射对齐 04-Todo §5.2）：");
+  console.log("      INV-01 sandbox:true（webPreferences）→ T-M0-006 安全沙箱");
+  console.log("      INV-02 严格 CSP（default-src 'self' + script-src 'self'）→ T-M0-006 安全沙箱");
+  console.log("      INV-03 preload 仅 exposeInMainWorld('piBridge') → T-M0-002 preload 受控桥接");
+  console.log("      INV-04 credential-vault safeStorage（Windows DPAPI）→ T-M0-007 credential-vault");
+  console.log("      INV-05 Host RPC 契约化（api.ts 22 RPC 方法，路由组 malf/risk/ai/bench/viewer/system）→ T-M0-005 contract RPC");
+  console.log("      INV-06 HTML 预览独立 CSP（form-action 'none'）→ T-M2-009 回测报告 Tab + HTML 预览独立 CSP");
   process.exit(0);
 }
 
@@ -74,7 +74,7 @@ function check(id, name, ok, detail = "") {
   console.log(`  ${mark} [${id}] ${name}${detail ? ` — ${detail}` : ""}`);
 }
 
-console.log("[check-desktop-security] 安全不变量六条校验（03-Arch §7 + 08-Test §5.7）\n");
+console.log("[check-desktop-security] 安全不变量六条校验（03-Arch §7 + 08-Test §5.8）\n");
 
 // ---- INV-01：sandbox:true ----
 const windowSrc = readSource("src/main/window.ts");
@@ -135,15 +135,15 @@ check(
   "键名正则 /^modelProvider:[a-z0-9._-]{1,160}$/i 或 /^riskbench:[a-z0-9._-]{1,160}$/i",
 );
 
-// ---- INV-05：Host RPC 契约化（api.ts 完整接口，21 RPC 方法）----
+// ---- INV-05：Host RPC 契约化（api.ts 完整接口，22 RPC 方法）----
 const apiTs = readSource("src/contract/api.ts");
-// 统计 Api interface 中以 "namespace.method": 形式定义的方法（06-API §3 21 方法）
+// 统计 Api interface 中以 "namespace.method": 形式定义的方法（06-API §3 22 方法）
 const apiMethodCount = (apiTs.match(/^\s*"[a-zA-Z]+\.[a-zA-Z_]+"\s*:/gm) || []).length;
 check(
   "INV-05",
-  "Host RPC 契约化（api.ts 完整接口，21 RPC 方法）",
-  apiMethodCount >= 21,
-  `api.ts 方法数 ${apiMethodCount}（阈值 ≥ 21，06-API §3）`,
+  "Host RPC 契约化（api.ts 完整接口，22 RPC 方法）",
+  apiMethodCount >= 22,
+  `api.ts 方法数 ${apiMethodCount}（阈值 ≥ 22，06-API §3）`,
 );
 
 // 额外断言：六路由组前缀全覆盖（malf/risk/ai/bench/viewer/system）
@@ -177,7 +177,7 @@ console.log(
   `\n[check-desktop-security] ${results.length} 条断言：通过 ${results.length - failed.length}，失败 ${failed.length}`,
 );
 
-// 六条全绿才通过（08-Test §5.7：任一断言失败阻塞合并）
+// 六条全绿才通过（08-Test §5.8：任一断言失败阻塞合并）
 if (failed.length > 0) {
   console.error("\n[check-desktop-security] FAILED：存在未通过的不变量");
   for (const r of failed) {

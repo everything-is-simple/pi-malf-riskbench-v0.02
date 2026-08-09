@@ -1,9 +1,9 @@
 # 01-TRD-技术需求-Technical-Requirements
 
-**版本**：v0.1.0
-**日期**：2026-08-09
+**版本**：v0.1.1
+**日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
-**上游**：AGENTS.md（待创建）、[00-文档索引](./00-文档索引-Index.md)
+**上游**：AGENTS.md（已创建 v0.1.7）、[00-文档索引](./00-文档索引-Index.md)
 **下游**：[02-PRD](./02-PRD-产品需求-Product-Requirements.md)、[03-架构设计](./03-架构设计-Architecture-Design.md)
 **用途**：v0.02 技术底座决策与六点定案，决定"系统以什么技术栈构建"
 
@@ -181,14 +181,16 @@ contract/      ← RPC 契约：MessagePort + 统一信封
 
 ### 5.5 桌面壳安全不变量六条（v0.02 新增）
 
-| 编号 | 不变量 | 断言 | 实现位置 |
-|---|---|---|---|
-| INV-01 | renderer 沙箱 | `sandbox:true` | Electron BrowserWindow 配置 |
-| INV-02 | 严格 CSP | script-src/connect-src 限制 | Electron session 配置 |
-| INV-03 | preload 受控桥接 | 不暴露 Node API | preload.ts 白名单 |
-| INV-04 | credential-vault safeStorage | 密钥 Windows DPAPI 加密 | credential-vault.ts |
-| INV-05 | Host RPC 契约 | 所有跨进程通信走 contract | contract.ts + ipcMain 白名单 |
-| INV-06 | HTML 预览独立 CSP | 回测报告/Markdown 渲染隔离 | 预览窗口独立 session |
+> 断言列与 `scripts/check-desktop-security.mjs` 可执行条件严格一致（P0-3/N-2 修复，对齐 04-Todo §5.2 + AGENTS.md §9.6 + 03-Arch §7 + 08-Test §5.8 四处统一）。
+
+| 编号 | 不变量 | 断言（脚本可执行条件） | 实现位置 | task-id |
+|---|---|---|---|---|
+| INV-01 | renderer 沙箱 | `sandbox:true`（webPreferences） | Electron BrowserWindow 配置 | T-M0-006 |
+| INV-02 | 严格 CSP | `default-src 'self'` + `script-src 'self'` | Electron session 配置 | T-M0-006 |
+| INV-03 | preload 受控桥接 | 仅 `exposeInMainWorld('piBridge')`，不暴露 Node API | preload.ts contextBridge 白名单 | T-M0-002 |
+| INV-04 | credential-vault safeStorage | `safeStorage` Windows DPAPI 加密 | credential-vault.ts | T-M0-007 |
+| INV-05 | Host RPC 契约化 | `api.ts` 完整接口，22 RPC 方法（六路由组 malf/risk/ai/bench/viewer/system） | contract.ts + ipcMain 白名单 | T-M0-005 |
+| INV-06 | HTML 预览独立 CSP | `form-action 'none'`（HTML_PREVIEW_CSP） | 预览窗口独立 session | T-M2-009 |
 
 ---
 
@@ -368,6 +370,7 @@ contract/      ← RPC 契约：MessagePort + 统一信封
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | v0.1.0 | 2026-08-09 | 初始草案：四动力组合 + 技术栈决策 + 六点决策定案 + 确定性约束继承 + 安全不变量六条 |
+| v0.1.1 | 2026-08-10 | 第四轮交叉审查 P0-1 修复：§5.5 INV-05 断言"21 RPC 方法"→"22 RPC 方法"（v0.1.6 新增 quantify_risk 后同步，与 AGENTS.md §9.6 + 03-Arch §7 + 08-Test §5.8 四处统一）。 |
 
 ---
 

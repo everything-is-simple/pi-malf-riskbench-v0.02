@@ -3,7 +3,7 @@
 **版本**：v0.1.0
 **日期**：2026-08-09
 **状态**：📝 草案（待用户审查批准）
-**上游**：[01-TRD](./01-TRD-技术需求-Technical-Requirements.md)、AGENTS.md（待创建）
+**上游**：[01-TRD](./01-TRD-技术需求-Technical-Requirements.md)、AGENTS.md（已创建 v0.1.7）
 **下游**：[03-架构设计](./03-架构设计-Architecture-Design.md)、[07-工作流](./07-工作流-Workflow.md)、[09-UI](./09-使用者介面-UI-Design.md)
 **用途**：v0.02 产品需求与业务边界定案，定义"系统做什么、不做什么"
 

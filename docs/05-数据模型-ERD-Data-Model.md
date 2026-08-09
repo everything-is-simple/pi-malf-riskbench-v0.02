@@ -1,7 +1,7 @@
 # 05-数据模型-ERD-Data-Model
 
-**版本**：v0.1.0
-**日期**：2026-08-09
+**版本**：v0.1.2
+**日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **上游**：[03-架构设计](./03-架构设计-Architecture-Design.md)
 **下游**：[06-API](./06-API契约-API-Contracts.md)、[07-工作流](./07-工作流-Workflow.md)、[08-测试验收](./08-测试验收-Test-Plan.md)
@@ -31,7 +31,7 @@ v0.02 数据层完全继承 v0.01 的 DuckDB 生产库，新增表仅用于风�
 | 1 | `snapshots` | v0.01 继承 | 44 | (symbol, timeframe, bar_dt) | v0.01 erd.md + MALF v2.1 Service §2 |
 | 2 | `signals` | v0.01 继承 | 10 | signal_id | v0.01 erd.md + MALF v2.1 Service §2 |
 | 3 | `risk_declarations` | v0.02 新增 | 9 | declaration_id | PRD §6.2 |
-| 4 | `ai_interpretations` | v0.02 新增 | 见 §5.2 | interpretation_id | v0.02 新建 |
+| 4 | `ai_interpretations` | v0.02 新增 | 13 | interpretation_id | v0.02 新建（§5.2） |
 | 5 | `config/models.json` | v0.02 新增（文件） | — | — | TRD §7 决策 3 |
 
 ### 1.3 设计原则
@@ -293,6 +293,16 @@ CoreStateSnapshot 是 MALF 引擎 Core 层的内部状态对象，**不直接持
 - AI 解读必须标注：`ai_interpretation` 字段必须标明"AI 解读"，`ai_interpretation_marked` 必须为 TRUE（S33）
 
 **存储位置**：v0.02 运行时沙箱 `Z:\pi-malf-riskbench-v0.02-runtime\` 下独立 DuckDB 文件，**不污染生产库**。
+
+> **写入通道**（P1-2 修复）：risk_declarations 表的建表与写入需 v0.02 自建**可写 DuckDB 连接层**（T-M2-016），**不依赖** T-M1-001（DuckDB 只读访问层，SELECT only）。T-M1-001 仅服务 UI 渲染路径的只读查询（snapshots/signals 表，生产库）；risk_declarations/ai_interpretations 表的写入走运行时沙箱独立 DB 的可写连接。
+
+> **可写连接层容错**（P1-2 修复，与 03-Arch §4.2.2 一致）：
+> - **WAL 模式**：`PRAGMA journal_mode=WAL`，写不阻塞读，崩溃后自动 WAL replay 恢复
+> - **单连接串行写**：可写连接层单例（单写进程约束，AGENTS.md §1.1），写操作串行排队，避免并发写冲突
+> - **崩溃恢复**：DuckDB WAL replay 自动恢复已提交事务；未提交事务回滚；连接断开自动重连（最多 3 次）
+> - **写超时**：单次写操作超时 10 秒，超时返回 `DUCKDB_ERROR`
+> - **数据隔离**：独立文件 `Z:\pi-malf-riskbench-v0.02-runtime\riskbench-runtime.duckdb`，不污染生产库
+> - **失败降级**：写失败 → 返回 `DUCKDB_ERROR`，UI 提示重试；不阻塞查询路径（TS 只读层独立）
 
 ### 5.2 ai_interpretations 表（AI 解读记录）
 
@@ -636,8 +646,10 @@ TDX 全量重跑 (run_pipeline.ps1)
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | v0.1.0 | 2026-08-09 | 初始草案：继承 v0.01 snapshots(44)/signals(10) schema + 新增 risk_declarations/ai_interpretations/config.models.json + 引擎内部持久化 + 备份三层 fallback + ER 关系图 + 4 数据流 + 约束与 PRAGMA |
+| v0.1.1 | 2026-08-09 | 第三轮交叉审查修复：§5.1 risk_declarations 表写入通道说明（P1-2 修复，建表需可写连接层 T-M2-016，非只读访问层 T-M1-001）；§5.2 ai_interpretations 表关系说明（P2-4，与内嵌字段关系）。 |
+| v0.1.2 | 2026-08-10 | 任务边界与容错审计 P1-2 修复：§5.1 可写连接层容错（WAL 模式 + 单连接串行写 + 崩溃恢复 ≤3 次重连 + 写超时 10 秒 + 数据隔离 + 失败降级，与 03-Arch §4.2.2 一致）。 |
 
 ---
 
 **文档维护**：schema 变更时更新，重大变更需用户批准
-**最后更新**：2026-08-09
+**最后更新**：2026-08-10

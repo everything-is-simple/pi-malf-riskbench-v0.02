@@ -1,7 +1,7 @@
 # 08-测试验收-Test-Plan
 
-**版本**：v0.1.0
-**日期**：2026-08-09
+**版本**：v0.1.1
+**日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **上游**：[02-PRD](./02-PRD-产品需求-Product-Requirements.md)、[03-架构设计](./03-架构设计-Architecture-Design.md)、[05-ERD](./05-数据模型-ERD-Data-Model.md)、[06-API](./06-API契约-API-Contracts.md)、[07-工作流](./07-工作流-Workflow.md)、[09-UI](./09-使用者介面-UI-Design.md)
 **下游**：[04-任务清单](./04-任务清单-Todo-List.md)、[10-开发规范](./10-开发规范-Dev-Rules.md)
@@ -113,7 +113,7 @@ fixture（tests/fixtures/，人肉推导）
 
 | 分层 | 五阶段 | 范围 | 工具 | 运行环境 | 目标数量 |
 |---|---|---|---|---|:--:|
-| **单件** | 阶段 2 | registerTool 契约 + 数据层触发器 + MALF Adapter + 技能夹具 | vitest + pytest | `Z:\pi-malf-riskbench-v0.02-runtime\runs\<task-id>\` | ≥300 |
+| **单件** | 阶段 2 | registerTool 契约 + 数据层触发器 + MALF Adapter + 技能夹具 + **v0.01 继承复验（T-INH-* 段，290 passed）** | vitest + pytest | `Z:\pi-malf-riskbench-v0.02-runtime\runs\<task-id>\` | ≥300（含继承 290） |
 | **集成** | 阶段 3 | extension×pi 底座 + 钩子协作 + MALF Adapter 桥接 | vitest | 同上 | ≥60 |
 | **系统冒烟** | 阶段 5 | S1-S7 + 安全不变量 + 确定性验证 | vitest + pytest | 同上 | ≥30 |
 | **系统 E2E** | 阶段 5 | 学生主路径 + 备份恢复 + AI 解读 | vitest + Electron | 同上 | ≥24 |
@@ -158,6 +158,7 @@ fixture（tests/fixtures/，人肉推导）
 | `declare_risk` | risk.* | 创建/修改/删除声明；用户主权（AI 不可修改 user_text）；幂等 | T-UT-036 ~ T-UT-050 |
 | `list_risk_declarations` | risk.* | 列出声明；按 created_at 排序；过滤 symbol/timeframe | T-UT-051 ~ T-UT-055 |
 | `check_risk_contradiction` | risk.* | 检测矛盾；只提醒不修改；标注"AI 解读" | T-UT-056 ~ T-UT-065 |
+| `quantify_risk` | risk.* | RISK 量化器（P0-B 修复，v0.1.6 追加）：只读 snapshot；不评分不决策；阈值参数化；lineage_hash 透传 | **T-UT-136 ~ T-UT-145（追加段，编号位于 export_csv T-UT-126~135 之后，非顺序排列）** |
 | `ai_interpret_snapshot` | ai.* | 标注"AI 解读"；失败不阻塞；mock provider | T-UT-066 ~ T-UT-080 |
 | `ai_interpret_backtest` | ai.* | 标注"AI 解读"；research_only 边界；mock provider | T-UT-081 ~ T-UT-090 |
 | `ai_discover_rules` | ai.* | 信号发现辅助；不修改 MALF 引擎；mock provider | T-UT-091 ~ T-UT-100 |
@@ -211,20 +212,41 @@ fixture（tests/fixtures/，人肉推导）
 |---|---|---|
 | T-UT-301 | querySnapshot 正常返回 44 字段 | JSON Lines 响应含 result.snapshot |
 | T-UT-302 | querySnapshotRange 返回快照列表 | 响应为数组，每元素 44 字段 |
+| T-UT-303~310 | _预留段_ | 预留给 querySnapshot 系列扩展测试（如异常输入、边界条件） |
 | T-UT-311 | querySignals 返回事件流列表 | 响应含 result.events 数组 |
 | T-UT-312 | runBacktestVerification 返回验证结果 | 触发序列逐字节一致 |
 | T-UT-313 | getSymbolList 返回标的列表 | 响应含 result.symbols |
 | T-UT-314 | getTimeframes 返回周期列表 | 响应含 result.timeframes |
+| T-UT-315~320 | _预留段_ | 预留给 Adapter 方法扩展测试（如新方法、边界条件） |
 | T-UT-321 | 子进程 stdin/stdout JSON Lines 格式 | 每行一个 JSON，stderr 仅日志（D27） |
 | T-UT-322 | 请求 id 响应配对 | 响应 id == 请求 id |
 | T-UT-323 | MALF_ENGINE_ERROR 错误码映射 | Python 引擎抛错 → 错误码 MALF_ENGINE_ERROR |
 | T-UT-324 | DUCKDB_ERROR 错误码映射 | DuckDB 查询失败 → 错误码 DUCKDB_ERROR |
 | T-UT-325 | VALIDATION_ERROR 错误码映射 | 参数校验失败 → 错误码 VALIDATION_ERROR |
 | T-UT-326 | INTERNAL_ERROR 错误码映射 | 未知异常 → 错误码 INTERNAL_ERROR |
-| T-UT-327 | 子进程崩溃不拖垮桌面 | Python 进程退出 → Adapter 重启或报错，桌面存活 |
+| T-UT-327 | 子进程崩溃不拖垮桌面 + 3 次重启阈值 | Python 进程退出 → Adapter 自动重启最多 3 次，桌面存活（P0-A 修复，与 06-API §4.1 / 03-Arch §4.1 一致） |
+| T-UT-327a | 重启 3 次后仍失败 → MALF_ENGINE_ERROR | 第 4 次失败 → 返回 MALF_ENGINE_ERROR，桌面存活，在途请求全部失败 |
+| T-UT-327b | 重启期间在途请求处理 | 未配对返回的请求 → MALF_ENGINE_ERROR，调用方可重试 |
 | T-UT-328 | MALF 引擎零外部依赖保持 | 子进程不引入 numpy/pandas 等（D1/D16） |
 | T-UT-329 | Adapter 不修改 rule_versions | 透传 rule_versions 不重写（D29） |
 | T-UT-330 | Adapter 不修改 lineage_hash | 透传 lineage_hash 不重写（D29） |
+| T-UT-331 | quantify_risk 正常输入返回 RiskQuantifierDTO | 含 extremity/momentum/directional_advantage/joint_risk_alert 四字段（P0-B 修复，06-API §6.7） |
+| T-UT-332 | quantify_risk 极端度阈值参数化 | rank > 0.80 → is_extreme=true；阈值可由用户调整（不硬编码） |
+| T-UT-333 | quantify_risk 不评分不决策 | DTO 不含评分/胜率/买卖建议/仓位/PnL 字段（D19/02-PRD §2.2） |
+| T-UT-334 | quantify_risk 只读 snapshot 不修改引擎 | 调用前后 rule_versions/lineage_hash 不变（D29/S35） |
+| T-UT-335 | quantify_risk 经 Adapter 子进程（不经 TS 只读层） | AI 工具查询路径走 Adapter，D5 过滤生效（runtime_fingerprint 不暴露） |
+| T-UT-336 | quantify_risk snapshot 不存在 → NOT_FOUND | 查询成功但行不存在返回 NOT_FOUND（与 DUCKDB_ERROR 区分） |
+| T-UT-337 | quantify_risk 内部异常 → INTERNAL_ERROR | 量化器异常返回 INTERNAL_ERROR，提示重试 |
+| T-UT-338 | quantify_risk AI 可调用（白名单 ✅） | before_tool_call 不拦截 quantify_risk |
+| T-UT-339 | quantify_risk AI 不可修改 user_text | AI 调用 quantify_risk 不影响 risk_declarations 表（三层权威第二层） |
+| T-UT-340 | quantify_risk 联合风险提示触发条件 | 极端 + 衰减 + 方向切换 → is_high_risk=true，factors 列表正确 |
+| T-UT-341 | quantify_risk lineage_hash/rule_versions 透传 | DTO 字段值 == snapshot 原值（不重算） |
+| T-UT-342 | quantify_risk evidence 字段脱敏 | evidence 不含 apiKey/完整 UUID/文件路径/堆栈（S9） |
+| T-UT-343 | quantify_risk joint_risk_alert.suggestion 不含买卖建议 | suggestion 文案不输出买卖/仓位/评分（D19） |
+| T-UT-344 | quantify_risk 阈值调整后生效 | 用户调整 threshold=0.90 → rank=0.85 时 is_extreme=false |
+| T-UT-345 | quantify_risk 失败降级不阻塞主流程 | 量化器异常 → INTERNAL_ERROR，UI 显示提示但不崩溃 |
+| T-UT-346 | 表不存在 → DUCKDB_ERROR（与 NOT_FOUND 区分） | 查询不存在的表 → DUCKDB_ERROR（不是 NOT_FOUND） |
+| T-UT-347 | 行不存在 → NOT_FOUND（与 DUCKDB_ERROR 区分） | 表存在但行不存在 → NOT_FOUND（不是 DUCKDB_ERROR） |
 
 ### 3.4 技能夹具测试
 
@@ -454,18 +476,20 @@ fixture（tests/fixtures/，人肉推导）
 
 **目标**：执行六条硬断言 INV-01~06，合并 master 前必须全绿。
 
-**脚本**：`scripts/check-desktop-security.mjs`（待创建）
+**脚本**：`scripts/check-desktop-security.mjs`（✅ 已创建，design 阶段 graceful skip，M0 后启用完整校验）
+
+> 断言列与脚本可执行条件严格一致（P0-3/N-2 修复，对齐 01-TRD §5.5 + 03-Arch §7 + 04-Todo §5.2 + AGENTS.md §9.6 四处统一）。
 
 **六条硬断言**：
 
-| 编号 | 不变量 | 断言 | 实现位置 | 失败后果 |
-|---|---|---|---|---|
-| INV-01 | renderer 沙箱 | `sandbox:true` | Electron BrowserWindow 配置 | 立即停止 |
-| INV-02 | 严格 CSP | script-src/connect-src 限制 | Electron session 配置 | 立即停止 |
-| INV-03 | preload 受控桥接 | 不暴露 Node API | preload.ts 白名单 | 立即停止 |
-| INV-04 | credential-vault safeStorage | 密钥 Windows DPAPI 加密 | credential-vault.ts | 立即停止 |
-| INV-05 | Host RPC 契约 | 所有跨进程通信走 contract | contract.ts + ipcMain 白名单 | 立即停止 |
-| INV-06 | HTML 预览独立 CSP | 回测报告/Markdown 渲染隔离 | 预览窗口独立 session | 立即停止 |
+| 编号 | 不变量 | 断言（脚本可执行条件） | 实现位置 | task-id | 失败后果 |
+|---|---|---|---|---|---|
+| INV-01 | renderer 沙箱 | `sandbox:true`（webPreferences） | Electron BrowserWindow 配置 | T-M0-006 | 立即停止 |
+| INV-02 | 严格 CSP | `default-src 'self'` + `script-src 'self'` | Electron session 配置 | T-M0-006 | 立即停止 |
+| INV-03 | preload 受控桥接 | 仅 `exposeInMainWorld('piBridge')`，不暴露 Node API | preload.ts contextBridge 白名单 | T-M0-002 | 立即停止 |
+| INV-04 | credential-vault safeStorage | `safeStorage` Windows DPAPI 加密 | credential-vault.ts | T-M0-007 | 立即停止 |
+| INV-05 | Host RPC 契约化 | `api.ts` 完整接口，22 RPC 方法（六路由组 malf/risk/ai/bench/viewer/system） | contract.ts + ipcMain 白名单 | T-M0-005 | 立即停止 |
+| INV-06 | HTML 预览独立 CSP | `form-action 'none'`（HTML_PREVIEW_CSP） | 预览窗口独立 session | T-M2-009 | 立即停止 |
 
 **执行方式**：
 ```bash
@@ -668,7 +692,7 @@ UNINITIALIZED → INGESTING → VERIFYING → PUBLISHED → STALE
 
 | 测试 ID | 测试名 | 覆盖转换 | 断言 |
 |---|---|---|---|
-| T-SM-001 | UNINITIALIZED → INGESTING | 首次 ingest 启动 | 状态机正确进入 |
+| T-UT-500 | UNINITIALIZED → INGESTING | 首次 ingest 启动 | 状态机正确进入 |
 | T-UT-501 | INGESTING → VERIFYING | ingest 完成进入验证 | lineage_hash 验证（D8） |
 | T-UT-502 | VERIFYING → PUBLISHED | 验证通过发布 | 不可变 snapshot 发布 |
 | T-UT-503 | PUBLISHED → STALE | 数据过期 | freshness=stale |
@@ -804,6 +828,7 @@ cp Z:\ai-malf-riskbench-data\riskbench.duckdb Z:\ai-malf-riskbench--runtime\tmp\
 | 段 | 含义 | 示例 |
 |---|---|---|
 | `T-UT-XXX` | 单件测试（Unit Test） | T-UT-001 |
+| `T-UT-XXX[a-z]` | 单件测试子项（同一测试的多场景拆分） | T-UT-327a / T-UT-327b |
 | `T-IT-XXX` | 集成测试（Integration Test） | T-IT-001 |
 | `T-SM-XXX` | 系统冒烟（Smoke） | T-SM-001 |
 | `T-E2E-XXX` | 系统 E2E | T-E2E-001 |
@@ -813,6 +838,8 @@ cp Z:\ai-malf-riskbench-data\riskbench.duckdb Z:\ai-malf-riskbench--runtime\tmp\
 | `T-SM-SEC-XX` | 安全断言（SECURITY） | T-SM-SEC-01 |
 | `T-SM-LEAK-XX` | 防泄露断言（LEAK） | T-SM-LEAK-01 |
 | `T-SM-USAGE-XX` | 用途分级断言（USAGE） | T-SM-USAGE-01 |
+
+> **子项后缀规则**：同一测试 ID 需拆分多个场景（如"3 次重启阈值"拆为"重启 + 超阈值 + 在途请求"）时，使用小写字母后缀 `[a-z]`。子项共享主 ID 的测试主题，断言独立。
 
 ### 10.3 测试名格式
 
@@ -1014,8 +1041,9 @@ def test_缺失symbol抛VALIDATION_ERROR():
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | v0.1.0 | 2026-08-09 | 初始草案：测试金字塔四层 + 关键断言矩阵 + 状态机测试矩阵 + 测试夹具 + 命名规范 + 合并 master 门槛 + G0-G3 门禁 + 性能基准 |
+| v0.1.1 | 2026-08-10 | 任务边界与容错审计 P0+P1 修复 + 第四轮交叉审查：§3.1 新增 quantify_risk 测试段 T-UT-136~145（P0-B）；§3.3 新增 T-UT-327/327a/327b Adapter 子进程崩溃恢复（P0-A，3 次重启 + 第 4 次 MALF_ENGINE_ERROR + 在途请求）；§3.3 新增 T-UT-331~337 quantify_risk 边界断言（P0-B）；§3.3 新增 T-UT-346/347 错误码边界区分（表不存在 DUCKDB_ERROR vs 行不存在 NOT_FOUND）；§5.8 INV-05 21→22 RPC 方法（P0-1，第四轮交叉审查）；§8.1 T-SM-001 重复 → T-UT-500（P0-3，第四轮交叉审查）。 |
 
 ---
 
 **文档维护**：测试策略变更时更新，重大变更需用户批准
-**最后更新**：2026-08-09
+**最后更新**：2026-08-10

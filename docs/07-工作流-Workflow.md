@@ -1,7 +1,7 @@
 # 07-工作流-Workflow
 
-**版本**：v0.1.0
-**日期**：2026-08-09
+**版本**：v0.1.1
+**日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **上游**：[02-PRD](./02-PRD-产品需求-Product-Requirements.md)、[03-架构设计](./03-架构设计-Architecture-Design.md)、[06-API](./06-API契约-API-Contracts.md)
 **下游**：[08-测试验收](./08-测试验收-Test-Plan.md)、[09-UI](./09-使用者介面-UI-Design.md)
@@ -170,6 +170,7 @@ snapshots / signals / backtest_reports 表
 | `update_risk_declaration` | 风险声明 Tab | 修改 user_text |
 | `delete_risk_declaration` | 风险声明 Tab | 软删除声明 |
 | `check_risk_contradiction` | 风险声明 Tab | 矛盾提醒（AI 只提醒不修改） |
+| `quantify_risk` | 风险声明 Tab | RISK 量化器展示（极端度/动量/方向优势/联合风险提示，P0-B 修复） |
 | `ai_interpret_snapshot` | AI 对话 Tab | AI 解读 snapshot（必须标注） |
 | `ai_interpret_backtest` | AI 对话 Tab | AI 解读回测报告 |
 | `ai_discover_rules` | AI 对话 Tab | AI 信号发现（P2，结果仅供参考） |
@@ -221,7 +222,8 @@ declare_risk 工具（需会话）
 **用户主权**：
 - 用户可创建/修改/删除自己的风险声明（update/delete 仅修改 user_text）
 - update/delete 走软删除（留审计痕迹）
-- AI 不可调用 declare/update/delete（写入需用户会话，AI agent 不持有用户会话）
+- AI 可调用 `declare_risk` 创建声明（白名单 ✅，06-API §7.3 / 03-Arch §3.2 aiCallable=true），但**不可调用 `update_risk_declaration` / `delete_risk_declaration`**（黑名单，06-API §7.3 黑名单 7 个；其中安全隔离 6 个见 §3 双层暴露说明）
+- **裁决依据**（P1-1 修复）：创建 ≠ 修改，AI 创建声明属于"第三层 AI 解读的主动建议"，仍受 `ai_interpretation_marked=true` 约束（AI-05）；而修改/删除属于"改写第二层用户声明"，违反三层权威。AI 创建的声明默认 `draft` 状态，用户审查后才转 `declared`（状态机 §6.3）
 
 ### 3.2 AI 检测矛盾（只提醒不修改）
 
@@ -537,7 +539,7 @@ v0.02 组件治理遵循五阶段，任一阶段失败退回上一阶段，不�
 任何开发会话开始时，按以下顺序读取文档建立完整上下文：
 
 ```
-1. AGENTS.md（待创建）                ← 系统身份 + 权威链 + 任务铁律
+1. AGENTS.md（已创建 v0.1.7）          ← 系统身份 + 权威链 + 任务铁律
 2. docs/00-文档索引-Index.md          ← 文档导航 + 门禁状态 + 当前状态总览
 3. docs/04-任务清单-Todo-List.md      ← 当前任务注册表 + 里程碑状态
 4. .plan/00-当前任务.md（若存在）     ← 唯一执行中任务计划
@@ -765,8 +767,9 @@ v0.02 简化为 6 个状态机（参考 pi-studybuddy 11 个状态机，按 v0.0
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | v0.1.0 | 2026-08-09 | 初始草案：数据管道主路径（v0.01 继承 + v0.02 只读 Viewer）；风险声明路径（declare/check/interpret 三步）；AI 解读路径（snapshot/backtest/discover，AI-06 失败不阻塞）；备份恢复路径（联锁 + 三层 fallback）；组件治理流程（引用 11-组件装配 + Golden fixture 原则 + 中断恢复 + 开工强制入口顺序）；数据运维 SOP（v0.01 ops.md 继承，5 步 + 联锁）；6 个状态机（数据管道/风险声明/AI 解读/备份恢复/标的监控/回测验证）；错误处理（4 类错误码 + DETERMINISM_VIOLATION 流程）。输入：02-PRD §1.3/§6 + 03-架构设计 §4 + 06-API §2/§3/§5/§6 + v0.01 kiro-design.md §1.1/§3/§6.3 + ops.md v1.0 + workflow.md §3/§5/§7 + 00-索引 §8 |
+| v0.1.1 | 2026-08-10 | 第五轮交叉审查修复（AGENTS.md §11.4）：① §3.1 交叉引用修正（"06-API §7.3 安全隔离 6 个"→"06-API §3 安全隔离 6 个"，§7.3 实际标题为"黑名单 7 个"，安全隔离 6 个是 §3 双层暴露分类术语）；② §2.4 工具→Tab 映射表补 `quantify_risk` 行（风险声明 Tab，RISK 量化器展示，P0-B 修复同步）；③ 头部版本号 v0.1.0→v0.1.1 对齐 AGENTS.md §3.1 已登记版本（v0.1.6 阶段头部修正的版本历史补登）。 |
 
 ---
 
 **文档维护**：流程变更时更新，重大变更需用户批准
-**最后更新**：2026-08-09
+**最后更新**：2026-08-10

@@ -3,7 +3,7 @@
 **版本**：v0.1.0
 **日期**：2026-08-09
 **状态**：📝 草案（待用户审查批准）
-**上游**：AGENTS.md（待创建）§9.5、[01-TRD](./01-TRD-技术需求-Technical-Requirements.md) §7 决策 3、[04-任务清单](./04-任务清单-Todo-List.md) §4、[11-组件装配](./11-组件装配-Component-Assembly.md) §3
+**上游**：AGENTS.md（已创建 v0.1.6）§9.5、[01-TRD](./01-TRD-技术需求-Technical-Requirements.md) §7 决策 3、[04-任务清单](./04-任务清单-Todo-List.md) §4、[11-组件装配](./11-组件装配-Component-Assembly.md) §3
 **下游**：无
 **用途**：v0.02 所有目录职责定义与边界隔离 SoT
 

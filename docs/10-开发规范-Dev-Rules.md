@@ -3,7 +3,7 @@
 **版本**：v0.1.0
 **日期**：2026-08-09
 **状态**：📝 草案（待用户审查批准）
-**上游**：AGENTS.md（待创建）、[04-任务清单](./04-任务清单-Todo-List.md)、[08-测试验收](./08-测试验收-Test-Plan.md)、[03-架构设计](./03-架构设计-Architecture-Design.md)
+**上游**：AGENTS.md（已创建 v0.1.6）、[04-任务清单](./04-任务清单-Todo-List.md)、[08-测试验收](./08-测试验收-Test-Plan.md)、[03-架构设计](./03-架构设计-Architecture-Design.md)
 **下游**：无
 **用途**：v0.02 16 步标准化开发流程 + TDD + 单一任务门禁 + 文档治理检查
 
@@ -31,7 +31,7 @@
 
 | 关系 | 文档 | 交互内容 |
 |---|---|---|
-| 上游 | AGENTS.md（待创建） | 系统身份 + 权威链 + 任务铁律，本规范不得与之冲突 |
+| 上游 | AGENTS.md（已创建 v0.1.6） | 系统身份 + 权威链 + 任务铁律，本规范不得与之冲突 |
 | 上游 | [04-任务清单](./04-任务清单-Todo-List.md) | 任务注册表与证据 SoT，步骤 2/13 读写 |
 | 上游 | [08-测试验收](./08-测试验收-Test-Plan.md) | 测试金字塔 + 确定性验证 + 门禁，步骤 10/11 执行依据 |
 | 上游 | [03-架构设计](./03-架构设计-Architecture-Design.md) | 四层架构 + 安全不变量六条，步骤 6 实现依据 |
@@ -197,7 +197,7 @@
 | 项 | 内容 |
 |---|---|
 | **目标** | 系统冒烟通过 + 受影响 E2E 通过 + 安全不变量六条断言通过 |
-| **操作** | 1. **系统冒烟**：启动 Electron 应用，验证主流程可用<br>2. **受影响 E2E**：运行与本次修改相关的 E2E 测试<br>3. **安全不变量六条**（详见 03-Arch + 08-Test §5.7）：<br>　- INV-01 renderer 沙箱 `sandbox:true`<br>　- INV-02 严格 CSP（script-src/connect-src 限制）<br>　- INV-03 preload 受控桥接（不暴露 Node API）<br>　- INV-04 credential-vault safeStorage（Windows DPAPI 加密）<br>　- INV-05 Host RPC 契约（所有跨进程通信走 contract）<br>　- INV-06 HTML 预览独立 CSP（回测报告/Markdown 渲染隔离）<br>4. **确定性验证**（若涉及 MALF 引擎）：lineage_hash SHA256 跨机器可重现 |
+| **操作** | 1. **系统冒烟**：启动 Electron 应用，验证主流程可用<br>2. **受影响 E2E**：运行与本次修改相关的 E2E 测试<br>3. **安全不变量六条**（详见 03-Arch + 08-Test §5.8）：<br>　- INV-01 renderer 沙箱 `sandbox:true`<br>　- INV-02 严格 CSP（script-src/connect-src 限制）<br>　- INV-03 preload 受控桥接（不暴露 Node API）<br>　- INV-04 credential-vault safeStorage（Windows DPAPI 加密）<br>　- INV-05 Host RPC 契约（所有跨进程通信走 contract）<br>　- INV-06 HTML 预览独立 CSP（回测报告/Markdown 渲染隔离）<br>4. **确定性验证**（若涉及 MALF 引擎）：lineage_hash SHA256 跨机器可重现 |
 | **产出** | smoke/E2E 通过 + 安全不变量六条断言通过 |
 | **失败处理** | 若冒烟失败 → 根据错误修正实现，重新走步骤 6-11<br>若 E2E 失败 → 修正实现或更新 E2E（若合同变更且经批准）<br>若安全不变量失败 → **立即停止**，安全不变量不可妥协 |
 

@@ -1,9 +1,9 @@
 # 11-组件装配-Component-Assembly
 
-**版本**：v0.1.0
+**版本**：v0.1.1
 **日期**：2026-08-09
 **状态**：📝 草案（待用户审查批准）
-**上游**：AGENTS.md（待创建）§6、[01-TRD](./01-TRD-技术需求-Technical-Requirements.md) §2/§6、[03-架构设计](./03-架构设计-Architecture-Design.md) §3/§8、[04-任务清单](./04-任务清单-Todo-List.md) §3.3/§4
+**上游**：AGENTS.md §6、[01-TRD](./01-TRD-技术需求-Technical-Requirements.md) §2/§6、[03-架构设计](./03-架构设计-Architecture-Design.md) §3/§8、[04-任务清单](./04-任务清单-Todo-List.md) §3.3/§4
 **下游**：无
 **用途**：v0.02 "先分解，再组合" SoT + 6 步装配 + MALF Adapter 试炼场门禁
 
@@ -40,7 +40,7 @@ v0.02 装配遵循 **"先分解，再组合"** 原则（继承 pi-studybuddy §6
 
 | 关系 | 文档 | 引用章节 | 用途 |
 |---|---|---|---|
-| 上游 | AGENTS.md（待创建） | §6 | 任务铁律与安全约束 |
+| 上游 | AGENTS.md（已创建 v0.1.7） | §6 | 任务铁律与安全约束 |
 | 上游 | 01-TRD | §2 技术底座 / §6 组件治理 | 决定装配的技术栈与五阶段总览 |
 | 上游 | 03-架构设计 | §3 pi 扩展层 / §8 装配纪律 | 决定装配的架构边界与三批顺序 |
 | 上游 | 04-任务清单 | §3.3 任务拆解 / §4 治理看板 | 决定装配的 task-id 与状态看板 |
@@ -256,7 +256,7 @@ MALF Adapter 桥接 Python MALF 引擎与 TypeScript pi 扩展层，除 §5.2 �
 | MA4 | **受控输入** | 调用 MALF 引擎的参数（symbol/timeframe/bar_dt）经白名单校验，拒绝越权查询 |
 | MA5 | **只读调用** | Adapter 不调用任何写路径（不写 snapshots/signals 表，D28），写入仍由 v0.01 run_pipeline.ps1 独占 |
 
-**Adapter 方法映射**（对齐 [03-架构设计 §4.1](./03-架构设计-Architecture-Design.md)）：
+**Adapter 方法映射**（对齐 [03-架构设计 §4.1](./03-架构设计-Architecture-Design.md)，共 6 个，与 06-API §4.2 一致）：
 
 | Adapter 方法 | 对应 v0.01 API | 用途 |
 |---|---|---|
@@ -266,6 +266,8 @@ MALF Adapter 桥接 Python MALF 引擎与 TypeScript pi 扩展层，除 §5.2 �
 | `runBacktestVerification(symbol, timeframe)` | run_full_verification | 运行 T4 验证 |
 | `getSymbolList()` | DuckDB SELECT DISTINCT | 获取标的列表 |
 | `getTimeframes(symbol)` | DuckDB SELECT DISTINCT | 获取周期列表 |
+
+> **Adapter 签名包装责任**（P0-10 修复，与 03-Arch §4.1 / 06-API §4.3 一致）：Adapter 方法签名（TS 侧）与 v0.01 Python API 签名可能不完全一致，Adapter 负责参数名/类型转换、返回值归一（DTO + D5 过滤）、错误码映射（→ 4 码）、`lineage_hash`/`rule_versions` 原样透传（D29）。能力卡 §3 公开 API 须记录两侧签名映射关系。
 
 ### 5.4 DuckDB 只读访问层规则
 
@@ -312,7 +314,7 @@ interface ContractEnvelope<T = unknown> {
 
 ### 6.2 装配契约校验 AST（check-contract-coverage.mjs）
 
-装配时须通过 `scripts/check-contract-coverage.mjs`（待创建）AST 校验：
+装配时须通过 `scripts/check-contract-coverage.mjs`（✅ 已创建，design 阶段 graceful skip，M0 后启用完整校验）AST 校验：
 
 | 校验项 | 说明 |
 |---|---|
@@ -328,25 +330,27 @@ interface ContractEnvelope<T = unknown> {
 
 ## §7 装配门禁
 
-### 7.1 四项门禁
+### 7.1 四项门禁（AG1~AG4）
+
+> **编号说明**：装配门禁使用 `AG1~AG4`（Assembly Gate）前缀，与 08-测试验收 §12 数据用途分级 `G0~G3` 区分，避免编号冲突（P0-12 修复）。
 
 装配门禁（步骤 6）四项全绿才允许进入 master，继承 v0.01 装配.md + pi-studybuddy 范式：
 
 | 编号 | 门禁 | 校验方式 | 失败处理 |
 |---|---|---|---|
-| G1 | **组件测试全绿** | `pnpm test` + `pytest` 全 passed | 退回步骤 2/4 修复 |
-| G2 | **组件仓工作区干净** | `git status` 无未提交变更 | 提交或 stash 后重测 |
-| G3 | **公开 API 有文档** | 能力卡"公开 API"章节 + 06-API 契约登记表一致 | 退回步骤 3 补能力卡 |
-| G4 | **无越权行为** | `check-contract-coverage.mjs` + `check-desktop-security.mjs` 全绿 | 退回步骤 4 修复 |
+| AG1 | **组件测试全绿** | `pnpm test` + `pytest` 全 passed | 退回步骤 2/4 修复 |
+| AG2 | **组件仓工作区干净** | `git status` 无未提交变更 | 提交或 stash 后重测 |
+| AG3 | **公开 API 有文档** | 能力卡"公开 API"章节 + 06-API 契约登记表一致 | 退回步骤 3 补能力卡 |
+| AG4 | **无越权行为** | `check-contract-coverage.mjs` + `check-desktop-security.mjs` 全绿 | 退回步骤 4 修复 |
 
 ### 7.2 失败处理
 
 | 失败门禁 | 退回阶段 | 动作 |
 |---|---|---|
-| G1 组件测试 | 步骤 2（试炼场单件）或步骤 4（Adapter 封装） | 修复测试 → 重跑单件 → 重进装配 |
-| G2 工作区不干净 | — | 提交/stash 后重跑门禁，不退回阶段 |
-| G3 公开 API 无文档 | 步骤 3（能力卡沉淀） | 补全能力卡 → 重新对齐契约 → 重进步骤 4 |
-| G4 越权行为 | 步骤 4（Adapter 封装） | 修复越权（硬编码路径/未登记 RPC/暴露 Node）→ 重跑 AST 校验 |
+| AG1 组件测试 | 步骤 2（试炼场单件）或步骤 4（Adapter 封装） | 修复测试 → 重跑单件 → 重进装配 |
+| AG2 工作区不干净 | — | 提交/stash 后重跑门禁，不退回阶段 |
+| AG3 公开 API 无文档 | 步骤 3（能力卡沉淀） | 补全能力卡 → 重新对齐契约 → 重进步骤 4 |
+| AG4 越权行为 | 步骤 4（Adapter 封装） | 修复越权（硬编码路径/未登记 RPC/暴露 Node）→ 重跑 AST 校验 |
 
 **铁律**：任一门禁失败不进 master，不"先合并再修"。
 
@@ -357,7 +361,7 @@ interface ContractEnvelope<T = unknown> {
 - 装配日期
 - task-id（对齐 04-Todo）
 - contract RPC 方法名
-- 四项门禁结果（G1-G4 各 ✅/数值）
+- 四项门禁结果（AG1~AG4 各 ✅/数值）
 - 装配人/agent 标识
 
 ---
@@ -387,7 +391,7 @@ v0.02 自建组件必须走完以下 6 步，任一步失败退回上一步，�
    │  check-contract-coverage.mjs AST 校验
    │
 步骤 6：装配门禁
-   │  G1 测试全绿 + G2 工作区干净 + G3 API 有文档 + G4 无越权
+   │  AG1 测试全绿 + AG2 工作区干净 + AG3 API 有文档 + AG4 无越权
    │  通过 → 进 master，追加装配记录
 ```
 
@@ -493,7 +497,7 @@ v0.02 自建组件必须走完以下 6 步，任一步失败退回上一步，�
 - 组件：Electron main + preload + renderer + agent-host + contract + 安全沙箱 + credential-vault
 - 粒度：套组件配薄胶水（继承 pi-desktop 范式）
 - 前置：无
-- 产出：可启动的空壳 + 安全不变量六条（INV-01 ~ INV-06）校验通过
+- 产出：可启动的空壳 + 安全不变量五条（INV-01~05）校验通过 + INV-06 占位（HTML 预览 CSP 实现在 T-M2-009，M0 仅 constants 占位，全量断言移至 M2 退出门槛，P2-2 修复）
 - 铁律：壳层未就绪前，批次 2/3 不得启动
 
 ### 批次 2 公用零件（M0-M1）
@@ -546,7 +550,7 @@ v0.02 自建组件必须走完以下 6 步，任一步失败退回上一步，�
 
 ### 11.2 越权检测
 
-越权行为（G4 门禁失败）包括但不限于：
+越权行为（AG4 门禁失败）包括但不限于：
 
 | 越权类型 | 表现 | 检测方式 |
 |---|---|---|
@@ -559,7 +563,7 @@ v0.02 自建组件必须走完以下 6 步，任一步失败退回上一步，�
 | AI 修改确定性计算 | pi 扩展层调用 MALF 引擎写方法 | 代码审查 |
 | 公网绑定 | 监听非 127.0.0.1 地址 | check-desktop-security.mjs |
 
-**越权处理**：检测到越权行为立即退回步骤 4（Adapter 封装），修复后重跑 G4 门禁，不进 master。
+**越权处理**：检测到越权行为立即退回步骤 4（Adapter 封装），修复后重跑 AG4 门禁，不进 master。
 
 ---
 
@@ -568,6 +572,7 @@ v0.02 自建组件必须走完以下 6 步，任一步失败退回上一步，�
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | v0.1.0 | 2026-08-09 | 初始草案：先分解再组合原则 + 三层装配边界 + v0.01 继承/v0.02 自建组件清单 + 试炼场规则六条 + 能力卡七章节 + Adapter 封装规则 + contract RPC 装配 + 四项门禁 + 6 步流程 + 治理看板 + 三批顺序 + 组件安全清单 |
+| v0.1.1 | 2026-08-09 | P0 审计修复：① §5.3 Adapter 方法映射标注"共 6 个"并新增签名包装责任说明（P0-10）；② §7.1 四项门禁编号由 G1~G4 改为 AG1~AG4（Assembly Gate），与 08-测试验收 §5 数据用途分级 G0~G3 区分，避免编号冲突（P0-12）；③ §7.2/§7.3/§8 步骤 6/§11.2 全部 G 引用同步改为 AG；④ 上游 AGENTS.md 由"待创建"改为"已创建"（治理体系就绪）。审计洞集见 .record/ 实施记录。 |
 
 ---
 

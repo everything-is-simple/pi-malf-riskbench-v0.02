@@ -7,7 +7,7 @@
  *   2. PiBridge 桥接方法链路完整（renderer → preload → IPC → main handler）
  *   3. Stream 通道登记一致（contract + handlers 双端登记）
  *   4. DTO 类型导出完整（每个 RPC 方法的 params/result 类型在 contract 中存在）
- *   5. RPC 方法名路由组前缀合法（malf.*/risk.*/ai.*/bench.*/viewer.*/system.*，06-API §7.1）
+ *   5. RPC 方法名路由组前缀合法（malf / risk / ai / bench / viewer / system 六路由组，06-API §7.1）
  *
  * 当前阶段（design，contract 未就绪）：
  *   - src/contract/api.ts 不存在 → graceful skip（退出码 0）
@@ -20,8 +20,9 @@
  * 参考：
  *   - pi-desktop/scripts/check-contract-coverage.mjs（AST 校验范式来源）
  *   - pi-studybuddy/scripts/check-contract-coverage.mjs（阶段自适应范式）
- *   - docs/06-API契约-API-Contracts.md（契约 SoT，21 RPC 方法 + 6 路由组）
- *   - docs/03-架构设计 §3.2（registerTool 工具集，14 工具）
+ *   - docs/06-API契约-API-Contracts.md（契约 SoT，22 RPC 方法 + 6 路由组 + 15 registerTool 白名单）
+ *   - docs/03-架构设计 §3.2（registerTool 工具集，15 工具，aiCallable 全 ✅）
+ *   - docs/06-API §7.3（AI agent 工具调用权限边界：白名单 15 + 黑名单 7）
  *   - AGENTS.md §6（拆分→小组件→组合）
  */
 import fs from "node:fs";
@@ -50,13 +51,23 @@ const desktopContractPath = path.join(root, "src/contract/desktop.ts");
 if (!fs.existsSync(contractApiPath)) {
   console.log("OK: 契约骨架未就绪（src/contract/api.ts 不存在），跳过 AST 校验");
   console.log("    （M0 骨架 T-M0-005 落地后，本脚本将自动启用完整校验）");
-  console.log("    预期 21 RPC 方法（06-API §3）：");
-  console.log("      malf.query_snapshot / malf.query_signals / malf.query_symbol_list / malf.query_timeframes / malf.explain_snapshot");
-  console.log("      risk.declare_risk / risk.list_risk_declarations / risk.check_risk_contradiction");
+  console.log("    预期 22 RPC 方法（06-API §3，6 路由组）：");
+  console.log("      malf.query_snapshot / malf.query_snapshot_range / malf.query_signals / malf.query_symbol_list / malf.query_timeframes / malf.explain_snapshot");
+  console.log("      risk.declare_risk / risk.list_risk_declarations / risk.update_risk_declaration / risk.delete_risk_declaration / risk.check_risk_contradiction / risk.quantify_risk");
   console.log("      ai.ai_interpret_snapshot / ai.ai_interpret_backtest / ai.ai_discover_rules");
   console.log("      bench.run_backtest_report / bench.read_backtest_report");
   console.log("      viewer.export_csv");
-  console.log("      system.models_config_get / system.models_config_set / system.credentials_get / system.credentials_set / system.ping / system.health");
+  console.log("      system.models_config_get / system.models_config_set / system.credentials_get / system.credentials_set");
+  console.log("    预期 15 registerTool 工具（06-API §7.3 白名单，03-Arch §3.2 aiCallable ✅）：");
+  console.log("      malf: query_snapshot / query_signals / query_symbol_list / query_timeframes / explain_snapshot");
+  console.log("      risk: declare_risk / list_risk_declarations / check_risk_contradiction / quantify_risk");
+  console.log("      ai: ai_interpret_snapshot / ai_interpret_backtest / ai_discover_rules");
+  console.log("      bench: run_backtest_report / read_backtest_report");
+  console.log("      viewer: export_csv");
+  console.log("    黑名单 7 个（AI 禁止调用，06-API §7.3）：");
+  console.log("      risk.update_risk_declaration / risk.delete_risk_declaration");
+  console.log("      malf.query_snapshot_range（RPC 专用）");
+  console.log("      system.models_config_get / system.models_config_set / system.credentials_get / system.credentials_set");
   process.exit(0);
 }
 

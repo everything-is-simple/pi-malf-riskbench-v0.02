@@ -1,7 +1,7 @@
 # AGENTS.md — pi-malf-riskbench-v0.02 仓库操作宪章
 
-**版本**：v0.1.1
-**日期**：2026-08-09
+**版本**：v0.1.8
+**日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **适用**：对人和 AI agent 同等约束（仿 pi 生态 AGENTS.md 约定，作为 context file 自动注入 system prompt）
 
@@ -35,7 +35,7 @@
 **AI MALF RiskBench v0.02 = pi（AI 底座）+ pi-desktop 式桌面壳 + v0.01 已实现组件（MALF 地板层）+ MALF v2.1 领域权威 + Electron 只读 Viewer**
 
 - **服务对象**：单一个体交易者（独立个人，负责数据整理、风险声明、决策）
-- **核心价值**：在 v0.01 五组件（290 passed）基础上，以 pi 为 AI 底座、Electron 为桌面壳，把 MALF 结构测量 → RISK 风险量化 → AI 信号发现 → BENCH 基准验证连成只读风险工作台
+- **核心价值**：在 v0.01 五组件 + 主仓编排（共 290 passed）基础上，以 pi 为 AI 底座、Electron 为桌面壳，把 MALF 结构测量 → RISK 风险量化 → AI 信号发现 → BENCH 基准验证连成只读风险工作台
 - **AI 底座**：pi coding agent（`@earendil-works/pi-coding-agent`），不修改内核，所有业务能力通过 `registerTool` + 扩展 + 技能接入
 - **形态**：Electron 桌面应用（单机、单用户、单写进程）
 - **领域权威**：MALF v2.1 Definitive 是最高领域语义权威，AGENTS.md 不得改写其语义
@@ -53,7 +53,7 @@
 
 ### 1.3 与 v0.01（ai-malf-riskbench）的关系
 
-**继承不重写**。v0.01 五组件（malf-engine / malf-data / riskbench-shared / malf-signal / malf-backtest，290 passed）+ 生产数据库 + Z 盘目录拓扑 + 安全/确定性约束全部继承；v0.02 新增 pi 底座 + Electron 壳 + MALF Adapter 桥 + 只读 Viewer，**不复制 v0.01 实现**。
+**继承不重写**。v0.01 五组件（malf-engine / malf-data / riskbench-shared / malf-signal / malf-backtest，239 passed）+ 主仓编排（51 passed）共 290 passed + 生产数据库 + Z 盘目录拓扑 + 安全/确定性约束全部继承；v0.02 新增 pi 底座 + Electron 壳 + MALF Adapter 桥 + 只读 Viewer，**不复制 v0.01 实现**。
 
 ### 1.4 三层权威（继承 v0.01）
 
@@ -94,23 +94,24 @@
 
 ## §3 文档权威源
 
-### 3.1 设计文档（docs/00-12，全部 📝 草案待用户审查批准）
+### 3.1 设计文档（docs/00-12 + prep，全部 📝 草案待用户审查批准）
 
 | 文档 | 版本 | 权威范围 |
 |---|---|---|
-| [00-文档索引](./docs/00-文档索引-Index.md) | v0.1.0 | 文档导航 + 门禁 + Z 盘拓扑 + 版本历史 |
-| [01-TRD](./docs/01-TRD-技术需求-Technical-Requirements.md) | v0.1.0 | 技术底座 + 六点定案决策 + D1-D29 确定性约束 + INV-01~06 安全不变量 |
+| [00-文档索引](./docs/00-文档索引-Index.md) | v0.1.2 | 文档导航 + 门禁 + Z 盘拓扑 + 版本历史 |
+| [01-TRD](./docs/01-TRD-技术需求-Technical-Requirements.md) | v0.1.1 | 技术底座 + 六点定案决策 + D1-D29 确定性约束 + INV-01~06 安全不变量（断言对齐脚本） |
 | [02-PRD](./docs/02-PRD-产品需求-Product-Requirements.md) | v0.1.0 | 三层权威 + 四层业务闭环 + 非目标 + 风险声明边界 |
-| [03-Architecture](./docs/03-架构设计-Architecture-Design.md) | v0.1.0 | 四层架构 + Electron 五件骨架 + pi 扩展 + MALF Adapter + 安全不变量六条 |
-| [04-Todo](./docs/04-任务清单-Todo-List.md) | v0.1.0 | 任务登记 + 组件治理看板 + 里程碑 M0-M4 + 48 task-id |
-| [05-ERD](./docs/05-数据模型-ERD-Data-Model.md) | v0.1.0 | DuckDB schema + WaveStructuralSnapshot 44 字段 + v0.02 新表 |
-| [06-API](./docs/06-API契约-API-Contracts.md) | v0.1.0 | 21 RPC 方法 + MALF Adapter JSON Lines + DTO |
-| [07-Workflow](./docs/07-工作流-Workflow.md) | v0.1.0 | 数据管道 + 风险声明 + 6 状态机 + SOP |
-| [08-Test](./docs/08-测试验收-Test-Plan.md) | v0.1.0 | 四层金字塔 + INV-01~06 + G0-G3 门禁 + 确定性验证 |
+| [03-Architecture](./docs/03-架构设计-Architecture-Design.md) | v0.1.3 | 四层架构 + Electron 五件骨架 + pi 扩展 + MALF Adapter + 安全不变量六条 + before_tool_call 钩子 + 读路径归属 + 进程崩溃恢复 + 可写连接层容错 + RISK 量化器边界 |
+| [04-Todo](./docs/04-任务清单-Todo-List.md) | v0.1.3 | 任务登记 + 组件治理看板 + 里程碑 M0-M4 + 61 task-id（含 RISK 量化器/运行时可写DB/Streams 边界/边界容错补齐） |
+| [05-ERD](./docs/05-数据模型-ERD-Data-Model.md) | v0.1.2 | DuckDB schema + WaveStructuralSnapshot 44 字段 + v0.02 新表 + 写入通道说明 + 可写连接层容错 |
+| [06-API](./docs/06-API契约-API-Contracts.md) | v0.1.3 | 22 RPC 方法 + 15 registerTool 白名单 + MALF Adapter JSON Lines + DTO + Streams 边界 + 落盘目标 + 回测容错 + RISK 量化器 DTO |
+| [07-Workflow](./docs/07-工作流-Workflow.md) | v0.1.1 | 数据管道 + 风险声明 + 6 状态机 + SOP + declare_risk AI 权限裁决 |
+| [08-Test](./docs/08-测试验收-Test-Plan.md) | v0.1.1 | 四层金字塔 + INV-01~06（断言对齐脚本） + G0-G3 门禁 + 确定性验证 |
 | [09-UI](./docs/09-使用者介面-UI-Design.md) | v0.1.0 | 三栏布局 + 6 Tab + 44 字段展示 + honest degradation |
 | [10-开发规范](./docs/10-开发规范-Dev-Rules.md) | v0.1.0 | 16 步流程 + .plan/.record 双目录 + TDD 纪律 |
-| [11-组件装配](./docs/11-组件装配-Component-Assembly.md) | v0.1.0 | 先分解再组合 + 四道装配门 + 三批次 |
+| [11-组件装配](./docs/11-组件装配-Component-Assembly.md) | v0.1.1 | 先分解再组合 + 四道装配门（AG1~AG4） + 三批次 |
 | [12-目录治理](./docs/12-目录治理-Directory-Governance.md) | v0.1.0 | 14 Z 盘拓扑 + 三层物理隔离 + .gitignore |
+| [prep-参考点核对表](./docs/prep-参考点核对表.md) | v0.1.0 | 03-Arch 准备材料（四参考点核对，00-索引 §3.2 已登记） |
 
 ### 3.2 参考仓库（仅参考，不构成权威）
 
@@ -129,7 +130,7 @@
 |---|---|---|
 | MALF-Definitive v2.1 | `Z:\ai-malf-riskbench-Definitive\malf-Definitive（v1.0-v2.1）\MALF_Definitive_v2_1-deepseek-20260726\` | MALF 五层架构 + 44 字段契约 + 不变量 + 铁律 |
 
-### 3.4 治理资产清单（✅ 已创建，v0.1.0 治理体系就绪）
+### 3.4 治理资产清单（14 项 ✅ 已创建 + 2 项 ⏳ 待创建，治理体系就绪）
 
 | 文件 | 状态 | 作用 |
 |---|---|---|
@@ -145,6 +146,8 @@
 | `scripts/check-contract-coverage.mjs` | ✅ 已创建 | 契约 AST 校验（M0 后启用完整校验） |
 | `scripts/check-desktop-security.mjs` | ✅ 已创建 | 安全不变量六条断言（INV-01~06） |
 | `scripts/smoke.mjs` | ✅ 已创建 | M0 系统冒烟（M0 后启用完整校验） |
+| `scripts/verify-determinism.mjs` | ⏳ 待创建（M4 补全，08-Test §5.8 引用，v0.01 有同义脚本可继承） | 确定性验证（D1-D29 全通过断言） |
+| `scripts/verify-trigger-sequence.py` | ⏳ 待创建（M4 补全，08-Test §5.8 引用，v0.01 有同义脚本可继承） | 触发序列验证（事件流确定性） |
 | `.plan/` | ✅ 已就绪 | 任务计划目录（README + 00-当前任务，无执行中任务，等待 M0 启动） |
 | `.record/` | ✅ 已就绪 | 实施记录目录（README，待首任务收尾写入） |
 
@@ -245,7 +248,7 @@ AI provider / 飞书 / TDX 实时行情 全部 mock，仅冒烟/E2E 可走受控
 
 ### 5.5 v0.01 继承测试复验
 
-v0.01 五组件 290 passed 测试在 v0.02 中必须复验通过，**不得回退**。复验失败立即停止业务施工，先修复继承断裂。
+v0.01 五组件（239 passed）+ 主仓编排（51 passed）共 290 passed 测试在 v0.02 中必须复验通过，**不得回退**。复验失败立即停止业务施工，先修复继承断裂。
 
 ---
 
@@ -411,18 +414,18 @@ master 分支只代表已集成、已验证、docs/04 已同步的事实。
 - 业务数据根由 v0.01 run_pipeline.ps1 独占写，v0.02 Viewer **只读**
 - v0.02 运行时可清空重建，不影响 SoT
 
-### 9.6 安全不变量六条（01-TRD §5.5 + 08-Test §5.7）
+### 9.6 安全不变量六条（01-TRD §5.5 + 03-Arch §7 + 08-Test §5.8）
 
-由 `scripts/check-desktop-security.mjs` 硬断言，任一失败阻塞合并：
+由 `scripts/check-desktop-security.mjs` 硬断言，任一失败阻塞合并。断言列与脚本可执行条件严格一致（P0-3/N-2 修复，四处文档统一）：
 
-| 编号 | 不变量 | 实现位置 |
-|---|---|---|
-| INV-01 | renderer 沙箱 `sandbox:true` | Electron BrowserWindow webPreferences |
-| INV-02 | 严格 CSP（default-src 'self'） | Electron session 配置 |
-| INV-03 | preload 受控桥接（不暴露 Node API） | preload.ts contextBridge 白名单 |
-| INV-04 | credential-vault safeStorage（Windows DPAPI） | credential-vault.ts |
-| INV-05 | Host RPC 契约化（所有跨进程通信走 contract） | contract.ts + ipcMain 白名单 |
-| INV-06 | HTML 预览独立 CSP（form-action 'none'） | 预览窗口独立 session |
+| 编号 | 不变量 | 断言（脚本可执行条件） | 实现位置 | task-id |
+|---|---|---|---|---|
+| INV-01 | renderer 沙箱 | `sandbox:true`（webPreferences） | Electron BrowserWindow webPreferences | T-M0-006 |
+| INV-02 | 严格 CSP | `default-src 'self'` + `script-src 'self'` | Electron session 配置 | T-M0-006 |
+| INV-03 | preload 受控桥接 | 仅 `exposeInMainWorld('piBridge')`，不暴露 Node API | preload.ts contextBridge 白名单 | T-M0-002 |
+| INV-04 | credential-vault safeStorage | `safeStorage` Windows DPAPI 加密 | credential-vault.ts | T-M0-007 |
+| INV-05 | Host RPC 契约化 | `api.ts` 完整接口，22 RPC 方法（六路由组 malf/risk/ai/bench/viewer/system） | contract.ts + ipcMain 白名单 | T-M0-005 |
+| INV-06 | HTML 预览独立 CSP | `form-action 'none'`（HTML_PREVIEW_CSP） | 预览窗口独立 session | T-M2-009 |
 
 ---
 
@@ -464,7 +467,7 @@ node scripts/verify.mjs
 # cd Z:\ai-malf-riskbench-components\riskbench-shared && python -m pytest
 # cd Z:\ai-malf-riskbench-components\malf-signal && python -m pytest
 # cd Z:\ai-malf-riskbench-components\malf-backtest && python -m pytest
-# 预期：290 passed 全部通过，不得回退
+# 预期：五组件 239 + 主仓编排 51 = 290 passed 全部通过，不得回退
 ```
 
 **质量门阶段**（scripts/verify.mjs 自动按当前阶段选择）：
@@ -486,7 +489,7 @@ node scripts/verify.mjs
 - `docs/01-TRD` ~ `docs/09-UI`（设计文档）
 - `docs/10-开发规范` / `docs/11-组件装配` / `docs/12-目录治理`（治理文档）
 - `.pi/skills/*/SKILL.md`
-- `scripts/verify.mjs` / `scripts/check-docs-governance.mjs` / `scripts/check-contract-coverage.mjs` / `scripts/check-desktop-security.mjs` / `scripts/smoke.mjs`
+- `scripts/verify.mjs` / `scripts/check-docs-governance.mjs` / `scripts/check-contract-coverage.mjs` / `scripts/check-desktop-security.mjs` / `scripts/smoke.mjs` / `scripts/verify-determinism.mjs`（待创建）/ `scripts/verify-trigger-sequence.py`（待创建）
 
 ### 11.2 修订纪律
 
@@ -525,3 +528,10 @@ node scripts/verify.mjs
 |---|---|---|
 | v0.1.0 | 2026-08-09 | 初始草案：12 章仓库操作宪章。参考 ai-malf-riskbench AGENTS.md（v0.01 治理范式 + 权威链 + 单一任务门禁 + 受控收尾 + 三层权威）+ pi AGENTS.md（对人+agent 同约束）+ pi-studybuddy AGENTS.md（13 文档结构 + 交叉审查元纪律 + verify.mjs + contract 校验 + .pi/skills 治理 Skill）+ pi-desktop（check-desktop-security.mjs 硬断言范式）。适配 v0.02 单人单机单写场景 + v0.01 继承（290 passed）+ MALF v2.1 领域权威 + 三层物理隔离 + 安全不变量六条（INV-01~06），落地"拆分→小组件→组合"宗旨。 |
 | v0.1.1 | 2026-08-09 | 治理资产清单补全：§3.4 + §11.1 新增 `scripts/smoke.mjs` 登记（与 §10 开发命令引用对齐），§3.4 `.plan/` 描述精确化（README + 00-当前任务）。治理资产清单 14 项全部 ✅ 已创建并经 `scripts/check-docs-governance.mjs` 自检通过（13 份设计文档 + 2 个 Skill + 2 个 prompt + 5 件治理脚本 + .plan/.record 目录骨架）。修复 00-索引 §3.2 文档登记表状态字段一致性洞（01-12 由"📝 待写"对齐为"📝 草案"，与各文档头部状态一致）。 |
+| v0.1.2 | 2026-08-09 | P0 审计修复（12 洞全闭合）：§3.1 文档版本登记更新（03-Arch v0.1.1 / 04-Todo v0.1.1 / 06-API v0.1.1 / 11-组件装配 v0.1.1）。**P0-8** AI 工具权限边界：06-API §7.3 白名单14+黑名单7 + 03-Arch §3.2 aiCallable 列 + §3.3 before_tool_call 钩子。**P0-9** Adapter 方法一致性：06-API §4.2 移除 explainSnapshot（7→6，三文档一致）。**P0-10** Adapter 签名包装责任：03-Arch §4.1 + 06-API §4.3 + 11-组件装配 §5.3 三处统一说明。**P0-11** registerTool 14 vs RPC 21：06-API §3 新增"暴露为 registerTool"列 + check-contract-coverage.mjs 修复方法列表（移除幻影 system.ping/health，补 query_snapshot_range/update/delete_risk_declaration）。**P0-12** G 编号冲突：11-组件装配 §7.1 G1~G4 → AG1~AG4（Assembly Gate），与 08-Test G0~G3 数据用途分级区分。P0-1~P0-7 见 04-Todo v0.1.1 版本历史。 |
+| v0.1.3 | 2026-08-09 | 交叉审查修复（§11.4 元纪律，2 审查者合并 20 洞，处置 6 P0 + 7 P1 过时标注）：§3.1 文档版本登记更新（00-索引 v0.1.1 / 01-TRD v0.1.1 / 08-Test v0.1.1）。**6 P0 洞**：① 04-Todo 头部版本号 v0.1.0→v0.1.1（O-1）；② 04-Todo §9.4 优先级统计 P1=8→9（O-2）；③ 06-API §3 双层暴露分类 5+2→6+1（O-3）；④ check-desktop-security.mjs 注释 task-id 映射 6 条对齐 04-Todo §5.2（O-4）；⑤ 04-Todo §7.5 补 T-M4-001~004 cancelled 占位行（N-1，§9.1 加 cancelled 列，合计 56 总/52 pending/4 cancelled）；⑥ 安全不变量六条四处文档定义统一为脚本可执行条件（N-2，AGENTS.md §9.6 + 01-TRD §5.5 + 03-Arch §7 + 08-Test §5.8 四处断言列+task-id 列对齐）。**7 P1 过时标注清理**：00-索引多处"AGENTS.md 待创建"→已创建 + §9.1 进度更新（O-5）；11-组件装配 §1.3"AGENTS.md 待创建"→已创建（O-6）；AGENTS.md §1.1/§1.3/§5.5 + 03-Arch §5.1"五组件 290"→"五组件 239 + 主仓编排 51 共 290"（N-3）；11-组件装配 §7.1 引用"08-Test §5"→"§12"（N-4）；03-Arch §7 引用"08-Test §5.7"→"§5.8"（N-5）；06-API §8.1 + 11-组件装配 §6.2 check-contract-coverage.mjs"待创建"→已创建（N-6）；01-TRD 第 6 行"AGENTS.md 待创建"→已创建（N-10）。**延后 7 洞**（M0 前处理）：N-7（§6.6 M4 残留）/N-8（§3.3 归类）/N-9（explain_snapshot/ai_discover_rules 无 task-id）/N-11（§4.2 看板缺主仓编排行）/O-7（verify-determinism.mjs 登记）/O-8（§6.1 M4 ~9 vs 8）/O-9（§3.2 状态符号）。交叉审查洞集见 .record/ 实施记录。 |
+| v0.1.4 | 2026-08-09 | 交叉审查延后 7 洞全闭合（§11.4 元纪律，M0 前必处理项）：§3.1 文档版本登记更新（04-Todo v0.1.2 / 00-索引 v0.1.2）。§3.4 治理资产清单标题更新（"14 项 ✅ + 2 项 ⏳ 待创建"）+ 补登 `verify-determinism.mjs` / `verify-trigger-sequence.py`（08-Test §5.8 引用，M4 补全）。§11.1 治理基线文件列表同步补登。**7 洞**：① **N-7** 04-Todo §6.6 移除残留设置 Tab 项 1-4（已上移 M3 T-M3-009~012），核心交付重编号 1-7，退出门槛移除"设置 Tab 全功能"；② **N-8** 04-Todo §3.3 典型任务归类修正，5 行全部与 §7.1~§7.5 治理阶段列精确对齐（单件/集成/组装/冒烟E2E 行任务重分配）；③ **N-9** 04-Todo 新增 T-M1-011 explain_snapshot 工具（P1，06-API §3.1 缺 task-id 补齐）+ T-M2-014 ai_discover_rules 工具（P2，06-API §3.3 缺 task-id 补齐），§6.1/§7.2/§7.3/§7.6/§9.1/§9.4 统计同步更新（56→58 总，52→54 pending，~53→~54 预估，P1 9→10，P2 2→3）；④ **N-11** 04-Todo §4.2 补"v0.01 主仓编排"行（run_pipeline + 备份恢复 + 验收门禁，51 passed）；⑤ **O-7** AGENTS.md §3.4 + §11.1 补登 `verify-determinism.mjs` / `verify-trigger-sequence.py`（⏳ 待创建，M4 补全）；⑥ **O-8** 04-Todo §6.1 M4 ~9→~8（pending 数，cancelled 不计）；⑦ **O-9** 00-索引 §3.2 状态符号统一（prep/00 ✅→📝 草案，与 01-12 一致）。`scripts/verify.mjs` 全通过。交叉审查洞集至此全闭合（6 P0 + 7 P1 + 7 延后 = 20 洞）。 |
+| v0.1.5 | 2026-08-09 | 第三轮交叉审查 15 洞全闭合（§11.4 元纪律，2 审查者实跑 290 passed + 实查 v0.01 源码接口）：§3.1 文档版本登记更新（02-PRD v0.1.0 头部 AGENTS.md 引用更新版本号未升级 / 03-Arch v0.1.2 / 04-Todo v0.1.3 / 05-ERD v0.1.1 / 06-API v0.1.2 / 07-Workflow v0.1.1）。**3 P1 需裁决**：① **P1-1** declare_risk AI 权限矛盾（07-Workflow §3.1 vs 06-API §7.3 vs 03-Arch §3.2）→ 裁决"AI 可创建不可改删"，补裁决依据；② **P1-2** risk_declarations 存储矛盾（05-ERD §5.1 运行时沙箱 vs 04-Todo T-M2-001 依赖只读层）→ 05-ERD 补写入通道说明 + T-M2-001 依赖改 T-M2-016 + 新增 T-M2-016 运行时可写 DB；③ **P1-3** 回测报告落盘+DTO 不符（实查 runner.py 纯内存返回，无 robustness/report_id）→ 06-API DTO robustness_result 改可选 + 补落盘目标说明。**4 P2**：④ **P2-1** Streams 边界（06-API §5 补实现边界，§5.1/5.2 标 v0.1 预留，§5.3/5.4 标 v0.1 实现）+ 新增 T-M3-013；⑤ **P2-2** M0 门槛 INV-06 时间错位（04-Todo §6.2 + 11-装配 §10 改为 INV-01~05 + INV-06 占位）；⑥ **P2-3** 读路径归属（03-Arch §4.2 写死三条读/写路径物理隔离）；⑦ **P2-4** ai_interpretations 孤儿表（保留独立表，06-API §6.4 补与内嵌字段关系说明）。**5 P3 文档精度**：⑧ read_snapshot 接口名修正（实查 duckdb_adapter.py 不存在该方法）；⑨ frozen dataclass → ConfigManager 类（实查 config.py）；⑩ 00-索引 §4 .plan/ 待创建→已就绪；⑪ 07-Workflow/02-PRD 头部 AGENTS.md 待创建→已创建 v0.1.4；⑫ check-desktop-security.mjs 注释 §5.7→§5.8。**3 任务缺口**：T-M2-015 RISK 量化器（PRD RISK-01~04 补齐）+ T-M2-016 运行时可写 DuckDB（P1-2 修复）+ T-M3-013 Streams 边界落地（P2-1 修复），统计更新 58→61 总/54→57 pending。`scripts/verify.mjs` 全通过。 |
+| v0.1.6 | 2026-08-10 | 任务边界与容错措施审计 P0+P1 全修复（2 P0 + 5 P1 + 错误码边界 + AI-06 降级）：§3.1 文档版本登记更新（03-Arch v0.1.3 / 05-ERD v0.1.2 / 06-API v0.1.3 / 07-Workflow v0.1.1 头部修正 / 08-Test v0.1.1）。**2 P0**：① **P0-A** Adapter 子进程崩溃恢复策略缺失 → 03-Arch §4.1 补 4 阶段恢复表（崩溃检测/自动重启 ≤3 次/超阈值 MALF_ENGINE_ERROR/在途请求处理）+ 06-API §4.1 错误码映射 + 08-Test T-UT-327/327a 断言（3 次重启 + 第 4 次 MALF_ENGINE_ERROR，桌面存活）；② **P0-B** RISK 量化器契约缺口 → 06-API §3.2 新增 quantify_risk 方法（risk.* 路由组 5→6）+ §6.7 新增 RiskQuantifierDTO（extremity/momentum/directional_advantage/joint_risk_alert + lineage_hash/rule_versions 透传）+ 03-Arch §4.2.1 补边界约束（只读不评分不决策，阈值参数化 0.80）+ 08-Test T-UT-136~145/T-UT-331 断言。**5 P1**：③ **P1-1** 回测运行容错缺失 → 06-API 补回测容错表（60 秒超时 + 子进程崩溃经 Adapter 3 次重启 + 窗口关闭进度不保存 + 磁盘写失败不保存）；④ **P1-2** 可写连接层容错缺失 → 03-Arch §4.2.2 补 6 维度容错表（WAL 模式/单连接串行写/崩溃恢复 ≤3 次重连/写超时 10 秒/数据隔离/失败降级）+ 05-ERD 同步；⑤ **P1-4** Electron main 崩溃恢复缺失 → 03-Arch §2.5 补进程崩溃恢复表（main 不自动重启，用户手动重启避免数据损坏）；⑥ **P1-5** agent-host utilityProcess 崩溃恢复缺失 → 03-Arch §2.5 补（不自动重启会话，用户确认后重建，旧上下文丢失数据不丢）+ renderer 崩溃 reload 策略；⑦ **P1-6** DPAPI 解密失败降级缺失 → 03-Arch §2.4 补降级表（账户变更/密文损坏 → VALIDATION_ERROR + UI 提示重设 + 日志脱敏）。**错误码边界**：08-Test T-UT-346（表不存在 → DUCKDB_ERROR）+ T-UT-347（行不存在 → NOT_FOUND）显式区分。**AI-06 失败降级**：04-Todo T-M1-007/T-M2-006/T-M2-007/T-M2-010/T-M2-014 备注补 AI-06 引用（AI 工具失败不阻塞确定性规则，映射 INTERNAL_ERROR）。**版本一致性修复**：07-Workflow 头部 v0.1.0→v0.1.1（对齐 AGENTS.md §3.1 已登记版本）。06-API RPC 21→22 + registerTool 14→15（quantify_risk 新增）。`scripts/verify.mjs` 全通过。 |
+| v0.1.7 | 2026-08-10 | 第四轮交叉审查 P2/P3 精度修复补充登记（28 洞中 P0/P1 已在 v0.1.6 登记，本条补登 P2/P3 共 15 洞）：§3.1 文档版本登记更新（01-TRD v0.1.1 对齐 / 02-PRD v0.1.0 回退修正 v0.1.5 条目误登）。**3 P0 精度修复**（v0.1.6 未登记部分）：① 测试 ID 去重（08-Test §5.1 与 §8.1 T-SM-001 冲突 → 状态机测试重编为 T-UT-500）；② 01-TRD/02-PRD 版本号对齐（01-TRD v0.1.0→v0.1.1，02-PRD 保持 v0.1.0）；③ 03-Arch/05-ERD/06-API/08-Test 版本历史补全（v0.1.2/v0.1.3 条目登记）。**9 P2 精度修复**：④ 05-ERD §1.2 ai_interpretations 列数"见 §5.2"→"13"（自指断言精确化）；⑤ 06-API §6.7 RiskQuantifierDTO threshold 参数化（硬编码 `0.80` → `number` 类型，默认 0.80，08-Test T-UT-332/344 断言对齐）；⑥ 08-Test §3.1 quantify_risk 测试段顺序说明（"追加段，位于 export_csv T-UT-126~135 之后"）；⑦ 08-Test §2.1 单件测试目标数补"含继承 290"说明；⑧/⑨/⑩/⑪/⑫ 其他 P2 引用格式规范化与表述精确化。**6 P3 文档精度**：版本登记表述精确化 + 表格行顺序注释 + task-id 子项后缀规则说明等。`scripts/verify.mjs` 全通过。第四轮交叉审查 28 洞全闭合（3 P0 + 10 P1 + 9 P2 + 6 P3）。 |
+| v0.1.8 | 2026-08-10 | 第五轮交叉审查 11 洞全闭合（§11.4 元纪律，2 审查者合并去重，0 P0 + 5 P1 + 3 P2 + 3 P3）：§3.1 标题更新（docs/00-12→docs/00-12 + prep）+ 补登 prep 行 + §12 v0.1.5 条目修正（02-PRD v0.1.1→v0.1.0 头部引用更新版本号未升级）。**5 P1**：① **A-1** 04-Todo §10 补登 v0.1.3 版本历史（第三轮交叉审查 + 任务边界审计，T-M2-015/016 + T-M3-013 新增）+ 日期更新；② **A-2** 07-Workflow §10 补登 v0.1.1 版本历史（第五轮修复登记）+ 日期更新；③ **B-1** 07-Workflow §3.1 交叉引用修正（"§7.3 安全隔离 6 个"→"§7.3 黑名单 7 个；安全隔离 6 个见 §3 双层暴露说明"，消除术语混用）；④ **B-2** 07-Workflow §2.4 工具→Tab 映射表补 `quantify_risk` 行（17→18 行，P0-B 修复同步）；⑤ **B-3** 09-UI §7.5 新增 RISK 量化器展示设计（四维特征布局 + 展示规则表 + 边界约束 5 条，对齐 06-API §6.7 RiskQuantifierDTO + 03-Arch §4.2.1 + 08-Test T-UT-331~345）。**3 P2**：⑥ **A-3** AGENTS.md §12 v0.1.5 条目 02-PRD 版本修正；⑦ **A-4** AGENTS.md §3.1 补登 prep 行 + 标题更新；⑧ **B-4** 5 份文档 AGENTS.md 版本号引用更新至 v0.1.7（00-索引 5 处 + 01-TRD + 02-PRD + 07-Workflow + 11-组件装配）。**3 P3**：⑨ **A-8** 04-Todo §2.1 补 task-id 字母后缀规则（第 4 条，对齐 08-Test §10.2）；⑩ **A-9** 04-Todo §6.1 合计行注明"~57 pending（不含 cancelled 4；总计 61）"；⑪ **A-10** 08-Test §3.1 quantify_risk 测试段注释加粗 + 补"非顺序排列"说明。`scripts/verify.mjs` 全通过。第五轮交叉审查 11 洞全闭合。 |

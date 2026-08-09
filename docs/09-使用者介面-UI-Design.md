@@ -521,6 +521,68 @@ honest degradation 是 v0.02 介面铁律（§1.2 铁律 4），None 字段不�
 
 **校验铁律**：`ai_interpretation_marked=false` 但 `ai_interpretation` 非空 → `VALIDATION_ERROR`（06-API §6.4）。
 
+### 7.5 RISK 量化器展示（quantify_risk，P0-B 修复）
+
+`quantify_risk` 从第一层 snapshot 提取风险特征，以 RiskQuantifierDTO（06-API §6.7）返回，在风险声明 Tab 侧栏展示。**只量化不评分不决策**（02-PRD §2.2 RISK-01~04，D19）。
+
+**触发方式**：用户在声明列表选中某 snapshot（symbol + timeframe + bar_dt）→ 自动调用 `quantify_risk` → 侧栏渲染四维风险特征。
+
+**展示布局**：
+
+```
+┌─ RISK 量化器 ─────────────────────────────────┐
+│ 标的: sh510050  周期: day  bar: 2026-08-04    │
+│                                              │
+│ ┌─ 极端度（extremity）─────────────────────┐ │
+│ │ rank: 0.87  [████████░░] 89%             │ │
+│ │ ⚠️ is_extreme: true（阈值 0.80）          │ │
+│ └──────────────────────────────────────────┘ │
+│                                              │
+│ ┌─ 动量（momentum）────────────────────────┐ │
+│ │ 状态: decelerating（衰减）                │ │
+│ │ 指示: 同向动量减弱，波段可能接近终止      │ │
+│ └──────────────────────────────────────────┘ │
+│                                              │
+│ ┌─ 方向优势（directional_advantage）──────┐ │
+│ │ 状态: self_dominant（本向占优）           │ │
+│ │ 指示: 当前方向力量占主导                  │ │
+│ └──────────────────────────────────────────┘ │
+│                                              │
+│ ┌─ 联合风险提示（joint_risk_alert）────────┐ │
+│ │ 🔴 is_high_risk: true                    │ │
+│ │ 触发因子:                                │ │
+│ │  • 极端度高（rank 0.87 > 0.80）          │ │
+│ │  • 动量衰减                              │ │
+│ │  • 方向切换风险                          │ │
+│ │ 建议: 关注波段终止信号，审慎声明          │ │
+│ │ （⚠️ 不含买卖/仓位/评分建议，D19）        │ │
+│ └──────────────────────────────────────────┘ │
+│                                              │
+│ 血统: lineage_hash a3f2...c1 | rule_versions │
+│ （只读透传，不重算，D29）                     │
+└──────────────────────────────────────────────┘
+```
+
+**展示规则**：
+
+| 元素 | 样式 | 约束 |
+|---|---|---|
+| 极端度 rank | 进度条 + 百分比 | rank ∈ [0, 1]；is_extreme=true 时红色高亮 |
+| 极端度阈值 | 标注当前阈值 | 阈值参数化（默认 0.80，用户可调，06-API §6.7） |
+| 动量状态 | 标签 + 简述 | accelerating / decelerating / flat 三态 |
+| 方向优势 | 标签 + 简述 | self_dominant / opposite_dominant / balanced 三态 |
+| 联合风险提示 | 红/黄/绿卡片 | is_high_risk=true 时红色；factors 列表逐条展示 |
+| 建议文案 | 灰色小字 | **不含买卖/仓位/评分/PnL 建议**（D19，08-Test T-UT-343 断言） |
+| 血统信息 | 折叠展示 | lineage_hash 截断 + rule_versions 摘要；只读透传不重算（D29） |
+
+**边界约束**（与 03-Arch §4.2.1 / 06-API §6.7 / 08-Test T-UT-331~345 一致）：
+
+- **只读 snapshot 不修改引擎**：quantify_risk 调用前后 rule_versions / lineage_hash 不变（D29 / S35，08-Test T-UT-334 断言）
+- **不评分不决策**：DTO 不含评分/胜率/买卖建议/仓位/PnL 字段（D19，08-Test T-UT-333 断言）
+- **失败降级**：snapshot 不存在 → `NOT_FOUND`（08-Test T-UT-336）；量化器内部异常 → `INTERNAL_ERROR`，UI 显示"量化器暂时不可用"提示但不崩溃（AI-06，08-Test T-UT-337/345）
+- **脱敏**：evidence 字段不含 apiKey / 完整 UUID / 文件路径 / 堆栈（S9，08-Test T-UT-342 断言）
+- **runtime_fingerprint 不暴露**：D5 过滤生效（08-Test T-UT-335 断言）
+
 ---
 
 ## §8 回测报告 Tab 详解
@@ -764,7 +826,7 @@ UI 层测试断言对齐 08-测试验收（待写）与 03-Architecture §7 安�
 | 14 | 标的列表 = 3 标的 | UI 渲染断言 | 05-ERD §1.4 |
 | 15 | 周期 = day/week/month | UI 渲染断言 | 05-ERD §1.4 |
 
-> E2E 测试用 Playwright（与 pi-desktop verify.mjs 范式一致，03-Architecture §8.1）；安全不变量由 `check-desktop-security.mjs` 硬断言。
+> E2E 测试用 vitest + Electron（与 pi-studybuddy 08-Test §6 范式一致，01-TRD §2.2 / 08-Test §6，非 Playwright）；安全不变量由 `check-desktop-security.mjs` 硬断言。
 
 ---
 
