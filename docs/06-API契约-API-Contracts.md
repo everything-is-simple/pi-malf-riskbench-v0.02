@@ -1,6 +1,6 @@
 # 06-API契约-API-Contracts
 
-**版本**：v0.1.5
+**版本**：v0.1.6
 **日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **上游**：[03-架构设计](./03-架构设计-Architecture-Design.md)、[05-ERD](./05-数据模型-ERD-Data-Model.md)
@@ -127,6 +127,7 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 |---|---|---|---|---|:--:|---|
 | `query_snapshot` | malf.* | `{symbol, timeframe, bar_dt}` | `WaveStructuralSnapshotDTO` | 只读 | ✅ | 查询单个 snapshot（56 字段，防泄露） |
 | `query_snapshot_range` | malf.* | `{symbol, timeframe, start_dt, end_dt}` | `WaveStructuralSnapshotDTO[]` | 只读 | ❌（RPC 专用） | 查询 snapshot 范围 |
+| `query_price_bars` | malf.* | `{symbol, timeframe, start_dt?, end_dt?}` | `PriceBarDTO[]` | 只读 | ✅ | **K 线 OHLC（T9.16）**：仅 MALF 有意义信息点（波段方向/区间/事件标注），默认近 60 bar；只读 DuckDB（D28） |
 | `query_signals` | malf.* | `{symbol, timeframe, start_dt, end_dt}` | `SignalDTO[]` | 只读 | ✅ | 查询事件流（4 事件码） |
 | `query_symbol_list` | malf.* | `{}` | `string[]` | 只读 | ✅ | 获取标的列表 |
 | `query_timeframes` | malf.* | `{symbol}` | `string[]` | 只读 | ✅ | 获取周期列表（day/week 生效；month 废弃不返回；hour 规划） |
@@ -150,7 +151,7 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 | `credentials_get` | system.* | `{key: string}` | `{has: bool}` | 需授权 | ❌（安全隔离） | 查询凭据是否存在（不回传明文） |
 | `credentials_set` | system.* | `{key: string, value: string}` | `{set: bool}` | 需授权 | ❌（安全隔离） | 设置凭据（DPAPI 加密） |
 
-> **registerTool 工具数**：17（✅ 标记的方法）。**RPC 专用方法数**：7（❌ 标记的方法）。合计 24。
+> **registerTool 工具数**：18（✅ 标记的方法）。**RPC 专用方法数**：7（❌ 标记的方法）。合计 25。
 
 ### 3.1 malf.* 路由组（MALF 查询工具，6 个）
 
@@ -160,6 +161,7 @@ renderer (React)  ←PiBridge→  main (Electron)  ←RPC→  agent-host (utilit
 |---|---|---|---|
 | `query_snapshot` | `{symbol: string, timeframe: 'day'\|'week', bar_dt: string}` | `WaveStructuralSnapshotDTO` | PK(symbol, timeframe, bar_dt)；不暴露 runtime_fingerprint（D5）；month 废弃（历史可查） |
 | `query_snapshot_range` | `{symbol, timeframe, start_dt, end_dt}` | `WaveStructuralSnapshotDTO[]` | 范围按 bar_dt 升序；上限 1000 条防内存膨胀 |
+| `query_price_bars` | `{symbol, timeframe, start_dt?, end_dt?}` | `PriceBarDTO[]` | **T9.16 K 线 OHLC（v0.01 malf-data d6a3c83）**：默认近 60 bar，price_bars 表只读（D28）；仅展示 MALF 有意义信息点（波段方向/区间/事件标注）；open/high/low/close 整数价格（D2/D21） |
 | `query_signals` | `{symbol, timeframe, start_dt, end_dt}` | `SignalDTO[]` | 4 事件码；按 event_dt 升序 |
 | `query_symbol_list` | `{}` | `string[]` | DuckDB SELECT DISTINCT symbol；当前 3 标的（sh510050/sh510300/sz159915），D3 扩展后 500+ ETF（标的池清单 `config/universe.json`，T-M2-019） |
 | `query_timeframes` | `{symbol}` | `string[]` | 返回 `['day','week']` 子集（month 废弃不返回） |
@@ -646,6 +648,29 @@ interface RankingDTO {
 - 只读（D28）；上限 200 行防内存膨胀（query_market_snapshot）
 - 未形成排名（None）的标的附 reason_codes 展示，不补零不估计（honest degradation）
 - 全市场视图的标的池 = query_symbol_list（当前 3 标的，D3 扩展待用户裁决）
+
+### 6.9 PriceBarDTO（K 线 OHLC，T9.16 新增）
+
+**用途**：支撑 TradingView 式弹窗 K 线图（仅展示 MALF 有意义信息点），数据来自 v0.01 malf-data price_bars 表（50 passed）。
+
+```typescript
+interface PriceBarDTO {
+  symbol: string,
+  timeframe: 'day' | 'week',
+  bar_dt: string,                          // ISO 日期
+  open: number,                             // 整数价格（/1000 仅 UI 展示层，D2/D21）
+  high: number,
+  low: number,
+  close: number
+  // ⛔ 不含：runtime_fingerprint（D5）
+}
+```
+
+**约束**：
+- 只读（D28），price_bars 表独立于 snapshots（05-ERD §1.5，待同步）
+- 默认返回近 60 bar（上限 200 bar 防内存膨胀）
+- 整数价格策略（D2），`/1000` 仅 UI 展示层转换（D21）
+- K 线图叠加 MALF 结构标注（波段方向/区间边界/守卫突破价/事件标记），标注数据来自 `query_snapshot_range` 同区间查询
 - **AI 可调用**：白名单 ✅（§7.3），AI 可读取量化结果用于解读，但不可修改 user_text（三层权威第二层）
 
 ---
@@ -656,7 +681,7 @@ interface RankingDTO {
 
 | 路由组 | 子系统 | 方法数 | 说明 |
 |---|---|:--:|---|
-| `malf.*` | MALF 查询 | 8 | 只读，封装 v0.01 引擎/数据/信号查询 + 全市场横截面/排名（D2） |
+| `malf.*` | MALF 查询 | 9 | 只读，封装 v0.01 引擎/数据/信号查询 + 全市场横截面/排名 + K 线 OHLC（D2/T9.16） |
 | `risk.*` | 风险声明 + 量化 | 6 | 第二层用户声明 + RISK 量化器，AI 只读不改 |
 | `ai.*` | AI 解读 | 3 | 第三层 AI 解读，必须标注 |
 | `bench.*` | 回测报告 | 2 | 只读，T4 确定性规则验证 |
@@ -686,7 +711,7 @@ AI agent 经 registerTool 调用工具时受 **白名单 + 黑名单** 双重约
 
 | 路由组 | 工具名 | 说明 |
 |---|---|---|
-| malf.* | `query_snapshot` / `query_signals` / `query_symbol_list` / `query_timeframes` / `query_market_snapshot` / `query_rankings` / `explain_snapshot` | 只读市场事实查询（第一层权威）+ 全市场横截面/排名（D2） |
+| malf.* | `query_snapshot` / `query_signals` / `query_symbol_list` / `query_timeframes` / `query_price_bars` / `query_market_snapshot` / `query_rankings` / `explain_snapshot` | 只读市场事实查询（第一层权威）+ 全市场横截面/排名 + K 线 OHLC（D2/T9.16） |
 | risk.* | `declare_risk` / `list_risk_declarations` / `check_risk_contradiction` / `quantify_risk` | 声明创建 + 只读列表 + 矛盾检测 + RISK 量化（只读 snapshot） |
 | ai.* | `ai_interpret_snapshot` / `ai_interpret_backtest` / `ai_discover_rules` | AI 解读（必须标注，第三层权威） |
 | bench.* | `run_backtest_report` / `read_backtest_report` | 只读回测验证 |
@@ -720,7 +745,7 @@ AI agent 经 registerTool 调用工具时受 **白名单 + 黑名单** 双重约
 
 | 校验项 | 断言 | 失败处理 |
 |---|---|---|
-| 方法覆盖 | `contract/api.ts` 的 `interface Api` 方法数 = §3 RPC 方法表方法数（24） | 阻断合并 |
+| 方法覆盖 | `contract/api.ts` 的 `interface Api` 方法数 = §3 RPC 方法表方法数（25） | 阻断合并 |
 | 路由组一致 | 每个方法名前缀匹配 §7.1 路由组（malf/risk/ai/bench/viewer/system） | 阻断合并 |
 | registerTool 白名单 | registerTool 注册的工具集 = §7.3 白名单 17 个（不含黑名单 7 个） | 阻断合并 |
 | 信封形状 | registerTool execute 返回 `{content, details, usage?, terminate?}` | 阻断合并 |
@@ -755,6 +780,7 @@ check-contract-coverage.mjs
 | v0.1.3 | 2026-08-10 | 任务边界与容错审计 P0+P1 修复：§3.2 新增 quantify_risk 方法（risk.* 路由组 5→6，RPC 21→22，registerTool 14→15，P0-B）；§4.1 子进程崩溃恢复策略（P0-A，4 阶段表）；§6.5 回测运行容错策略（P1-1，60 秒超时 + 子进程崩溃 + 窗口关闭 + 磁盘写失败）；§6.7 RiskQuantifierDTO（P0-B，extremity/momentum/directional_advantage/joint_risk_alert + lineage_hash/rule_versions 透传）；§6.4 RiskDeclarationDTO linked_fields→linked_snapshot_fields（P1-2，第四轮交叉审查，与 05-ERD §5.1 表 schema 一致）；§6.2 WaveStructuralSnapshotDTO snapshot_id→bar_index（P1-3，第四轮交叉审查，与 05-ERD §3.1 表 schema 一致）；§6.5 交叉引用 §5.2→§5.3（P1-4，第四轮交叉审查，backtest.progress 在 §5.3）。 |
 | v0.1.4 | 2026-08-10 | 工作台功能扩展（D1+D2 用户裁决）：§3 新增 query_market_snapshot / query_rankings（malf.* 6→8，RPC 22→24，registerTool 15→17，D2 全市场落地）；§3.4/§6.5 回测绩效指标放开（D1，research_only，02-PRD §4.4 语义恢复，performance 字段可选 + research_only:true 强制标记）；§6.8 新增 MarketSnapshotRowDTO / RankingDTO；§7.1 malf 8 + §7.3 白名单 17 + §8.1 AST 校验 24/17 同步。对应 04-Todo T-M1-012/013 + T-M2-017/018 新任务。 |
 | v0.1.5 | 2026-08-10 | 56 字段契约扩展（v0.01 T9.15，malf-engine ec161db）：§6.2 WaveStructuralSnapshotDTO 44→56 字段（精确字段清单替换概念性 DTO，新增 Wave 推进 5 + Wave 身份 3 + Range 演化 4）；§3.1 query_snapshot 56 字段；防泄露规则补 T9.15 新字段不进入 lineage_hash（处置 1，D5 先例）。对应 05-ERD v0.1.4 + 09-UI v0.1.2。 |
+| v0.1.6 | 2026-08-10 | T9.16 price_bars + K 线（用户裁决，v0.01 malf-data d6a3c83）：§3 新增 query_price_bars（malf.* 8→9，RPC 24→25，registerTool 17→18）；§6.9 新增 PriceBarDTO；§7.1 malf 9/白名单 18/§8.1 AST 25；K 线仅展示 MALF 有意义信息点（波段/区间/事件标注）。对应 09-UI §4.10 + 04-Todo T-M1-014。 |
 
 ---
 

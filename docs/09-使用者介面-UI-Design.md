@@ -1,6 +1,6 @@
 # 09-使用者介面-UI-Design
 
-**版本**：v0.1.2
+**版本**：v0.1.3
 **日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **上游**：[02-PRD](./02-PRD-产品需求-Product-Requirements.md)、[03-架构设计](./03-架构设计-Architecture-Design.md)、[06-API](./06-API契约-API-Contracts.md)、[07-工作流](./07-工作流-Workflow.md)、[08-测试验收](./08-测试验收-Test-Plan.md)
@@ -263,6 +263,27 @@ end:   [2026-08-04 ▼]
 ### 4.9 ⚙️ 设置 Tab（模型/凭据/路径/标的池/绩效开关，D2 修复）
 
 需用户授权（system.* 路由需授权，06-API §7.2）。配置项：模型 provider/凭据（DPAPI）、路径（DATA_ROOT/TDX_ROOT/runtime）、**标的池（D3 扩展待裁决）、绩效指标开关（D1，默认开，research_only 标记）**。详见 §9。
+
+### 4.10 📈 弹窗 K 线（TradingView 式，T9.16 新增）
+
+**触发**：全市场/排行榜/雷达 Tab 任意行点击 → modal overlay 弹窗（不离开当前 Tab）。
+
+**数据**：`query_price_bars`（PriceBarDTO[]，默认近 60 bar）+ `query_snapshot_range`（同区间 56 字段结构标注）。
+
+**K 线仅展示 MALF 有意义信息点（用户裁决 2026-08-10）**：
+- 蜡烛图：OHLC（整数价格，D2/D21），轻量图表库（lightweight-charts，~4KB）
+- **结构标注**（叠加在 K 线上，来自 snapshots 同区间）：
+  - 波段方向：📈 up 区段绿色底色 / 📉 down 区段红色底色（direction 字段）
+  - 区间边界：🟦 range_boundary_high_now / low_now 水平虚线
+  - 守卫价/突破价：guard_price 水平线 ⚡ + break_price 标记
+  - 事件标记：wave_terminated（▼）、range_resolved（◆）、guard_triggered（●）、break_triggered（▲）
+- **不展示**：纯价格趋势线/均线/量/技术指标（与 MALF 结构无关的信息不画）
+
+**交互**：
+- 弹窗内可切换周期（day/week）
+- 顶部面包屑：标的 + 周期 + 时间范围
+- 底部操作：[结构详情→个股深度 Tab] [加入候选池] [AI 解读此段]
+- 关闭：✕ 或点击遮罩层
 
 ---
 
@@ -897,6 +918,7 @@ UI 层测试断言对齐 08-测试验收（待写）与 03-Architecture §7 安�
 |---|---|---|
 | v0.1.0 | 2026-08-09 | 初始草案：三栏布局 + 6 Tab（AI 对话/市场事实/风险声明/回测报告/图表/设置）+ WaveStructuralSnapshot 44 字段按层分组展示 + signals 4 事件码 + honest degradation 展示规则 + 确定性展示 + pi-desktop 组件映射 + 省略组件 + INV-01~06 安全边界 + 防泄露 + AI 解读标注 + 桌面优先响应式 + UI 测试断言。输入：02-PRD §1.3/§6 + 03-Architecture §2/§3/§7 + 05-ERD §3 + 06-API §3/§5/§6 + pi-studybuddy §2 范式 |
 | v0.1.2 | 2026-08-10 | 56 字段契约扩展（v0.01 T9.15，用户裁决）：§6.1 WaveStructuralSnapshot 展示表 44→56 字段（新增 Wave 推进 progress_pct/new_count/no_new_span/progress_rank/birth_type + Range 演化 4 + Wave 身份 3，§6.1.4a 新增）；§4.5 个股深度 44→56；雷达 Tab 推进质量/出身分布区块依据 56 字段。对应 05-ERD v0.1.4 + 06-API v0.1.5。 |
+| v0.1.3 | 2026-08-10 | UI 定稿 8 Tab + TradingView 式弹窗 K 线：§4.1 总览 7→8 Tab（🎯 结构雷达入表，默认入口）；§4.10 新增弹窗 K 线设计（仅 MALF 有意义信息点：波段方向/区间/守卫突破/事件标注，lightweight-charts ~4KB）；K 线数据来自 v0.01 malf-data T9.16 price_bars。对应 06-API v0.1.6 + 04-Todo T-M1-014。 |
 | v0.1.1 | 2026-08-10 | 工作台功能扩展（D1+D2 用户裁决）：§4.1 Tab 总览 6→7（📊 全市场默认入口 + 🏆 排行榜；市场事实改名📈 个股深度；📈 图表并入个股深度）；新增 §4.2 全市场 Tab / §4.3 排行榜 Tab；§4.9 设置 Tab 补标的池/绩效开关；回测 Tab 补绩效指标区块（D1 research_only）。对应 06-API v0.1.4（query_market_snapshot/query_rankings）+ 04-Todo T-M1-012/013 + T-M2-017/018。 |
 
 ---

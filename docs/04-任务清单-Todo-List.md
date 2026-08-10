@@ -1,6 +1,6 @@
 # 04-任务清单-Todo-List
 
-**版本**：v0.1.7
+**版本**：v0.1.8
 **日期**：2026-08-10
 **状态**：📝 草案（待用户审查批准）
 **上游**：[01-TRD](./01-TRD-技术需求-Technical-Requirements.md)、[02-PRD](./02-PRD-产品需求-Product-Requirements.md)、[03-架构设计](./03-架构设计-Architecture-Design.md)、[05-ERD](./05-数据模型-ERD-Data-Model.md)、[06-API](./06-API契约-API-Contracts.md)、[07-工作流](./07-工作流-Workflow.md)、[08-测试验收](./08-测试验收-Test-Plan.md)、[09-UI](./09-使用者介面-UI-Design.md)
@@ -292,11 +292,11 @@
 | 里程碑 | 名称 | 目标 | 任务数（预估） |
 |---|---|---|---|
 | M0 | 骨架 | Electron 五件骨架 + 安全沙箱 + MALF Adapter 试炼 + v0.02 环境冒烟 | ~9 |
-| M1 | 核心闭环 | MALF 查询工具 + explain_snapshot + 只读 Viewer + DuckDB 只读访问 + v0.01 继承复验 + 全市场横截面 | ~13 |
+| M1 | 核心闭环 | MALF 查询工具 + explain_snapshot + 只读 Viewer + DuckDB 只读访问 + v0.01 继承复验 + 全市场横截面 + K 线 | ~14 |
 | M2 | 完整闭环 | RISK 风险声明 + RISK 量化器 + AI 解读 + ai_discover_rules + 回测报告 Viewer + 配置层基础 + 运行时可写 DB + 排行榜 + 回测绩效 + ETF 500+ 标的池扩展 | ~21 |
 | M3 | 打磨 | 技能系统 + prompt 模板 + 多模型切换 + 性能优化 + 设置页业务接线 + Streams 边界 + 候选池 + 结构雷达 + hour 数据 | ~17 |
 | M4 | 治理补全 + 打包部署 | 治理脚本断言补全 + Electron + Python 子进程打包 | ~8 |
-| **合计** | — | — | **~68（pending，不含 cancelled 4；总计 72，见 §9.1）** |
+| **合计** | — | — | **~69（pending，不含 cancelled 4；总计 73，见 §9.1）** |
 
 > 说明：M4 任务数由原 ~10 调整为 ~8（pending），因 T-M4-001~004（设置页业务接线）按 11-组件装配 §10 批次 3 归入 M3（cancelled 占位不计）；M4 新增 Python MALF 子进程打包（T-M4-008b）与 v0.01 组件资源打包（T-M4-008c）。M0 新增 T-M0-009 系统冒烟（对齐 scripts/smoke.mjs 引用）。M1 新增 T-M1-011 explain_snapshot 工具（06-API §3.1 缺 task-id 补齐）+ T-M1-012/013 全市场横截面与全市场 Tab（D2）；M2 新增 T-M2-013 配置层基础 + T-M2-014 ai_discover_rules 工具（06-API §3.3 缺 task-id 补齐）+ T-M2-015 RISK 量化器（PRD RISK-01~04 补齐）+ T-M2-016 运行时可写 DuckDB（P1-2 修复）+ T-M2-017 排行榜（D2）+ T-M2-018 回测绩效（D1）；M3 新增 T-M3-013 Streams 边界落地（P2-1 修复）+ T-M3-014 候选池 + T-M3-015 设置补全（D1/D2）。
 
@@ -455,6 +455,7 @@
 | T-M1-011 | explain_snapshot 工具（TS 原生静态查询，引用 MALF v2.1 字段权威解释） | 业务模块 | MALF | P1 | pending | 集成 | [06-API](./06-API契约-API-Contracts.md) §3.1 | `apps/desktop/src/tools/explain-snapshot.ts` | — | 依赖 T-M1-002（pi 扩展空壳）；不经 Adapter，TS 原生静态查询引用 MALF v2.1 字段文档 |
 | T-M1-012 | query_market_snapshot / query_rankings RPC（全市场横截面 + 寿命排名查询） | 业务模块 | MALF | P0 | pending | 集成 | [06-API](./06-API契约-API-Contracts.md) §3.1/§6.8 | `apps/desktop/src/tools/market-snapshot.ts` | — | 依赖 T-M1-001（DuckDB 只读）、T-M1-002（pi 扩展）；全标的×周期最新快照横截面 + Lifespan 双轨排名（D2 修复）；只读 DuckDB（D28）；上限 200 行 |
 | T-M1-013 | 📊 全市场 Tab（筛选/排序/分位分布） | 业务模块 | Viewer | P0 | pending | 组装 | [09-UI](./09-使用者介面-UI-Design.md) §4.2 | `apps/desktop/src/renderer/tabs/market.tsx` | — | 依赖 T-M1-012、T-M1-006；工作台默认入口（D2 修复）；行点击下钻个股深度；候选池多选（T-M3-014） |
+| T-M1-014 | query_price_bars RPC + 弹窗 K 线（TradingView 式，仅 MALF 有意义信息点） | 业务模块 | MALF | P1 | pending | 集成 | [06-API](./06-API契约-API-Contracts.md) §3.1/§6.9 / [09-UI](./09-使用者介面-UI-Design.md) §4.10 | `apps/desktop/src/tools/query-price-bars.ts` | — | 依赖 T9.16（v0.01 malf-data d6a3c83 price_bars 表）；K 线仅展示 MALF 结构标注（波段/区间/守卫突破/事件标记），不画纯价格趋势；lightweight-charts（~4KB）；modal overlay 弹窗不离开当前 Tab |
 
 ### §7.3 M2 任务大纲（完整闭环）
 
@@ -549,52 +550,53 @@
 | 20 | T-M1-010 | M1 | M1 系统冒烟 + E2E | T-M1-001~008/011 |
 | 21 | T-M1-012 | M1 | query_market_snapshot / query_rankings RPC（全市场横截面 + 排名查询） | T-M1-001、T-M1-002 |
 | 22 | T-M1-013 | M1 | 📊 全市场 Tab（筛选/排序/分位分布） | T-M1-012、T-M1-006 |
-| 23 | T-M2-016 | M2 | v0.02 运行时可写 DuckDB | T-M0-005 |
-| 24 | T-M2-001 | M2 | risk_declarations 表 + DuckDB schema | T-M2-016 |
-| 25 | T-M2-002 | M2 | declare_risk / list_risk_declarations 工具 | T-M2-001 |
-| 26 | T-M2-003 | M2 | update_risk_declaration / delete_risk_declaration 工具 | T-M2-001 |
-| 27 | T-M2-004 | M2 | check_risk_contradiction 工具 | T-M2-002、T-M2-003 |
-| 28 | T-M2-005 | M2 | ⚠️ 风险声明 Tab | T-M2-002、T-M2-003 |
-| 29 | T-M2-006 | M2 | ai_interpret_snapshot 工具（标注"AI 解读"） | T-M1-003 |
-| 30 | T-M2-014 | M2 | ai_discover_rules 工具（AI 辅助规则发现） | T-M2-006 |
-| 31 | T-M2-015 | M2 | RISK 量化器（P1/P2/P3 视图提取） | T-M1-003 |
-| 32 | T-M2-013 | M2 | 配置层基础（paths.py + config + models.json 骨架） | T-M0-005 |
-| 33 | T-M2-008 | M2 | run_backtest_report / read_backtest_report 工具 | T-M0-008、T-M1-001 |
-| 34 | T-M2-018 | M2 | 回测绩效模块（夏普/回撤/胜率/盈亏比/年化，research_only） | T-M2-008（D1 裁决） |
-| 35 | T-M2-007 | M2 | ai_interpret_backtest 工具 | T-M2-008 |
-| 36 | T-M2-009 | M2 | 📋 回测报告 Tab + HTML 预览（独立 CSP） | T-M2-008 |
-| 37 | T-M2-017 | M2 | 🏆 寿命排行榜 Tab（Lifespan 双轨 Top-N） | T-M1-012 |
-| 38 | T-M2-010 | M2 | AI 解读标注机制（每条 AI 回复标"AI 解读"） | T-M2-006、T-M2-007 |
-| 39 | T-M2-011 | M2 | 三层权威可视化（市场事实/用户声明/AI 解读分层） | T-M2-005、T-M2-010 |
-| 40 | T-M2-012 | M2 | M2 系统冒烟 + E2E | T-M2-001~021 |
-| 41 | T-M2-019 | M2 | ETF 标的池清单（universe.json） | T-M1-001 |
-| 42 | T-M2-020 | M2 | 批量 ingest 管道扩展（分批参数化） | T-M2-019 |
-| 43 | T-M2-021 | M2 | 全市场验证 + 生产库扩库 | T-M2-020 |
-| 44 | T-M3-001 | M3 | 技能系统（3 个技能） | M2 完成 |
-| 45 | T-M3-002 | M3 | prompt 模板（3 个） | T-M3-001 |
-| 46 | T-M3-007 | M3 | 文档治理检查脚本 | 无（可并行） |
-| 47 | T-M3-004 | M3 | model_select 钩子 + config/models.json 持久化 | T-M2-013、T-M0-007 |
-| 48 | T-M3-003 | M3 | 多模型切换 UI（pi provider 体系） | T-M3-004 |
-| 49 | T-M3-005 | M3 | export_csv 工具 + CSV 导出 UI | T-M1-003、T-M1-004 |
-| 50 | T-M3-006 | M3 | 性能优化（启动 < 3s / 查询 < 500ms） | M1、M2 完成 |
-| 51 | T-M3-009 | M3 | ⚙️ 设置 Tab 骨架 | M1 完成 |
-| 52 | T-M3-010 | M3 | models_config_get/set 工具 + UI | T-M3-004 |
-| 53 | T-M3-011 | M3 | credentials_get/set 工具 + UI | T-M0-007 |
-| 54 | T-M3-012 | M3 | 路径配置 UI（DATA_ROOT / TDX_ROOT / runtime） | T-M3-009 |
-| 55 | T-M3-013 | M3 | Streams 边界落地（backtest.progress + ai.streaming） | T-M2-008/006 |
-| 56 | T-M3-014 | M3 | 候选池（跨 Tab 多选 → 批量回测/导出） | T-M1-013 |
-| 57 | T-M3-015 | M3 | 设置 Tab 数据源/标的池/绩效开关配置 | T-M3-009 |
-| 58 | T-M3-016 | M3 | 🎯 结构雷达 Tab（9 区块，56 字段） | T-M1-012、T-M1-004 |
-| 59 | T-M3-017 | M3 | hour 级数据（lc5 解析 + 60m 聚合） | T-M2-020 |
-| 60 | T-M3-008 | M3 | M3 系统冒烟 + E2E | T-M3-001~007/009~017 |
-| 61 | T-M4-005 | M4 | verify.mjs 补全断言用例 | 无（可并行） |
-| 62 | T-M4-006 | M4 | check-contract-coverage.mjs 补全 AST 校验用例 | 无（可并行） |
-| 63 | T-M4-007 | M4 | check-desktop-security.mjs 补全 INV-01~06 断言用例 | 无（可并行） |
-| 64 | T-M4-008a | M4 | Electron 主进程打包（electron-builder，NSIS） | M3 完成 |
-| 65 | T-M4-008b | M4 | Python MALF 子进程打包（PyInstaller / embedded） | T-M4-008a |
-| 66 | T-M4-008c | M4 | v0.01 组件 + 资源打包 | T-M4-008a |
-| 67 | T-M4-009 | M4 | 打包冒烟测试（安装包 + 首启 + 子进程握手） | T-M4-008a/008b/008c |
-| 68 | T-M4-010 | M4 | M4 系统冒烟 + E2E + 打包验证 | T-M4-005/006/007/009 |
+| 23 | T-M1-014 | M1 | query_price_bars RPC + 弹窗 K 线（T9.16） | T-M1-001 |
+| 24 | T-M2-016 | M2 | v0.02 运行时可写 DuckDB | T-M0-005 |
+| 25 | T-M2-001 | M2 | risk_declarations 表 + DuckDB schema | T-M2-016 |
+| 26 | T-M2-002 | M2 | declare_risk / list_risk_declarations 工具 | T-M2-001 |
+| 27 | T-M2-003 | M2 | update_risk_declaration / delete_risk_declaration 工具 | T-M2-001 |
+| 28 | T-M2-004 | M2 | check_risk_contradiction 工具 | T-M2-002、T-M2-003 |
+| 29 | T-M2-005 | M2 | ⚠️ 风险声明 Tab | T-M2-002、T-M2-003 |
+| 30 | T-M2-006 | M2 | ai_interpret_snapshot 工具（标注"AI 解读"） | T-M1-003 |
+| 31 | T-M2-014 | M2 | ai_discover_rules 工具（AI 辅助规则发现） | T-M2-006 |
+| 32 | T-M2-015 | M2 | RISK 量化器（P1/P2/P3 视图提取） | T-M1-003 |
+| 33 | T-M2-013 | M2 | 配置层基础（paths.py + config + models.json 骨架） | T-M0-005 |
+| 34 | T-M2-008 | M2 | run_backtest_report / read_backtest_report 工具 | T-M0-008、T-M1-001 |
+| 35 | T-M2-018 | M2 | 回测绩效模块（夏普/回撤/胜率/盈亏比/年化，research_only） | T-M2-008（D1 裁决） |
+| 36 | T-M2-007 | M2 | ai_interpret_backtest 工具 | T-M2-008 |
+| 37 | T-M2-009 | M2 | 📋 回测报告 Tab + HTML 预览（独立 CSP） | T-M2-008 |
+| 38 | T-M2-017 | M2 | 🏆 寿命排行榜 Tab（Lifespan 双轨 Top-N） | T-M1-012 |
+| 39 | T-M2-010 | M2 | AI 解读标注机制（每条 AI 回复标"AI 解读"） | T-M2-006、T-M2-007 |
+| 40 | T-M2-011 | M2 | 三层权威可视化（市场事实/用户声明/AI 解读分层） | T-M2-005、T-M2-010 |
+| 41 | T-M2-012 | M2 | M2 系统冒烟 + E2E | T-M2-001~021 |
+| 42 | T-M2-019 | M2 | ETF 标的池清单（universe.json） | T-M1-001 |
+| 43 | T-M2-020 | M2 | 批量 ingest 管道扩展（分批参数化） | T-M2-019 |
+| 44 | T-M2-021 | M2 | 全市场验证 + 生产库扩库 | T-M2-020 |
+| 45 | T-M3-001 | M3 | 技能系统（3 个技能） | M2 完成 |
+| 46 | T-M3-002 | M3 | prompt 模板（3 个） | T-M3-001 |
+| 47 | T-M3-007 | M3 | 文档治理检查脚本 | 无（可并行） |
+| 48 | T-M3-004 | M3 | model_select 钩子 + config/models.json 持久化 | T-M2-013、T-M0-007 |
+| 49 | T-M3-003 | M3 | 多模型切换 UI（pi provider 体系） | T-M3-004 |
+| 50 | T-M3-005 | M3 | export_csv 工具 + CSV 导出 UI | T-M1-003、T-M1-004 |
+| 51 | T-M3-006 | M3 | 性能优化（启动 < 3s / 查询 < 500ms） | M1、M2 完成 |
+| 52 | T-M3-009 | M3 | ⚙️ 设置 Tab 骨架 | M1 完成 |
+| 53 | T-M3-010 | M3 | models_config_get/set 工具 + UI | T-M3-004 |
+| 54 | T-M3-011 | M3 | credentials_get/set 工具 + UI | T-M0-007 |
+| 55 | T-M3-012 | M3 | 路径配置 UI（DATA_ROOT / TDX_ROOT / runtime） | T-M3-009 |
+| 56 | T-M3-013 | M3 | Streams 边界落地（backtest.progress + ai.streaming） | T-M2-008/006 |
+| 57 | T-M3-014 | M3 | 候选池（跨 Tab 多选 → 批量回测/导出） | T-M1-013 |
+| 58 | T-M3-015 | M3 | 设置 Tab 数据源/标的池/绩效开关配置 | T-M3-009 |
+| 59 | T-M3-016 | M3 | 🎯 结构雷达 Tab（9 区块，56 字段） | T-M1-012、T-M1-004 |
+| 60 | T-M3-017 | M3 | hour 级数据（lc5 解析 + 60m 聚合） | T-M2-020 |
+| 61 | T-M3-008 | M3 | M3 系统冒烟 + E2E | T-M3-001~007/009~017 |
+| 62 | T-M4-005 | M4 | verify.mjs 补全断言用例 | 无（可并行） |
+| 63 | T-M4-006 | M4 | check-contract-coverage.mjs 补全 AST 校验用例 | 无（可并行） |
+| 64 | T-M4-007 | M4 | check-desktop-security.mjs 补全 INV-01~06 断言用例 | 无（可并行） |
+| 65 | T-M4-008a | M4 | Electron 主进程打包（electron-builder，NSIS） | M3 完成 |
+| 66 | T-M4-008b | M4 | Python MALF 子进程打包（PyInstaller / embedded） | T-M4-008a |
+| 67 | T-M4-008c | M4 | v0.01 组件 + 资源打包 | T-M4-008a |
+| 68 | T-M4-009 | M4 | 打包冒烟测试（安装包 + 首启 + 子进程握手） | T-M4-008a/008b/008c |
+| 69 | T-M4-010 | M4 | M4 系统冒烟 + E2E + 打包验证 | T-M4-005/006/007/009 |
 
 > 说明：无前置依赖的任务（T-M3-007、T-M4-005/006/007）可与同里程碑其他任务并行执行，但不得违反"单一执行任务门禁"（铁律 4）。T-M4-001~004 已上移至 M3（T-M3-009~012）。T-M1-011（explain_snapshot）与 T-M2-014（ai_discover_rules）为 06-API §3 缺 task-id 补齐（交叉审查 N-9 修复）。T-M2-015（RISK 量化器）/ T-M2-016（运行时可写 DB）/ T-M3-013（Streams 边界）为第三轮交叉审查任务缺口补齐。T-M1-012/013（全市场横截面 + 全市场 Tab）、T-M2-017/018（排行榜 + 回测绩效）、T-M3-014/015（候选池 + 设置补全）为工作台功能扩展（D1+D2 用户裁决）。T-M2-019~021（ETF 标的池扩展：universe.json + 分批 ingest + 全市场验证）为 D3 用户裁决（ETF 500+）。
 
@@ -637,11 +639,11 @@
 | 里程碑 | 总任务数 | pending | in_progress | testing | done | blocked | cancelled |
 |---|---|---|---|---|---|---|---|
 | M0 | 9 | 9 | 0 | 0 | 0 | 0 | 0 |
-| M1 | 13 | 13 | 0 | 0 | 0 | 0 | 0 |
+| M1 | 14 | 14 | 0 | 0 | 0 | 0 | 0 |
 | M2 | 21 | 21 | 0 | 0 | 0 | 0 | 0 |
 | M3 | 17 | 17 | 0 | 0 | 0 | 0 | 0 |
 | M4 | 12 | 8 | 0 | 0 | 0 | 0 | 4（T-M4-001~004 占位） |
-| **合计** | **72** | **68** | **0** | **0** | **0** | **0** | **4** |
+| **合计** | **73** | **69** | **0** | **0** | **0** | **0** | **4** |
 
 > 说明：原 T-M4-001~004 业务模块上移至 M3（T-M3-009~012）；M0 新增 T-M0-009 系统冒烟；M1 新增 T-M1-011 explain_snapshot 工具（06-API §3.1 缺 task-id 补齐）+ T-M1-012/013 全市场横截面与全市场 Tab（D2 工作台扩展）；M2 新增 T-M2-013 配置层基础 + T-M2-014 ai_discover_rules 工具（06-API §3.3 缺 task-id 补齐）+ T-M2-015 RISK 量化器（PRD RISK-01~04 补齐）+ T-M2-016 运行时可写 DuckDB（P1-2 修复）+ T-M2-017 排行榜 + T-M2-018 回测绩效（D1/D2）；M3 新增 T-M3-013 Streams 边界落地（P2-1 修复）+ T-M3-014 候选池 + T-M3-015 设置补全（D1/D2）；M4 T-M4-008 拆分为 008a/008b/008c（Python 子进程打包 + v0.01 组件资源打包）。T-M4-001~004 task-id 一经分配不可重用（§2.1 规则 1），保留占位但状态标 cancelled。
 
@@ -666,11 +668,11 @@
 
 | 优先级 | 任务数 | 占比 |
 |---|---|---|
-| P0 | 49 | 72.1% |
-| P1 | 15 | 22.1% |
-| P2 | 4 | 5.9% |
+| P0 | 49 | 71.0% |
+| P1 | 16 | 23.2% |
+| P2 | 4 | 5.8% |
 | P3 | 0 | 0.0% |
-| **合计** | **68**（按 task-id 计数，T-M4-008a/b/c 各计 1） | — |
+| **合计** | **69**（按 task-id 计数，T-M4-008a/b/c 各计 1） | — |
 
 ---
 
@@ -686,6 +688,7 @@
 | v0.1.5 | 2026-08-10 | 标的池扩展 D3 裁决（ETF 500+，实测 TDX 沪 916 + 深 1542 候选）：① 新增 T-M2-019 ETF 标的池清单（universe.json）+ T-M2-020 批量 ingest 管道扩展（v0.01 run_pipeline 分批参数化，每批 50 标的）+ T-M2-021 全市场验证与生产库扩库；② §6.1/§7.6/§9.1/§9.4 统计同步（67→70 总，63→66 pending，P0 45→48）；③ §7.6 执行顺序表重排（63→66 行，新增 41-43）。对应 05-ERD v0.1.3 + 07-Workflow v0.1.2。 | pi-malf-riskbench v0.02 |
 | v0.1.6 | 2026-08-10 | 56 字段契约扩展（v0.01 T9.15，malf-engine ec161db）+ 结构雷达：① 新增 T-M3-016 🎯 结构雷达 Tab（9 区块 100% 来自 56 字段 + 4 事件码，零外部数据）；② §6.1/§7.6/§9.1/§9.4 统计同步（70→71 总，66→67 pending，P0 48→49）；③ §7.6 执行顺序表重排（66→67 行）。对应 06-API v0.1.5 + 05-ERD v0.1.4 + 09-UI v0.1.2 + 08-Test v0.1.3。 | pi-malf-riskbench v0.02 |
 | v0.1.7 | 2026-08-10 | 周期收敛（用户裁决：day/week 生效，month 废弃，hour 实战级）：① 新增 T-M3-017 hour 级数据（TDX lc5 解析 + 60m 聚合）；② §6.1/§7.6/§9.1/§9.4 统计同步（71→72 总，67→68 pending，P1 14→15）；③ §7.6 执行顺序表重排（67→68 行）。对应 05-ERD/06-API/09-UI/08-Test 周期收敛（day/week，month 废弃标注）。 | pi-malf-riskbench v0.02 |
+| v0.1.8 | 2026-08-10 | T9.16 K 线数据 + 弹窗设计（用户裁决）：① 新增 T-M1-014 query_price_bars RPC + 弹窗 K 线（TradingView 式，仅 MALF 有意义信息点）；② §6.1/§7.6/§9.1/§9.4 统计同步（72→73 总，68→69 pending，P1 15→16）；③ §7.6 执行顺序表重排（68→69 行）。v0.01 malf-data d6a3c83（50 passed）。对应 06-API v0.1.6（25 RPC / 18 registerTool）+ 09-UI §4.10 K 线设计。 | pi-malf-riskbench v0.02 |
 
 ---
 
