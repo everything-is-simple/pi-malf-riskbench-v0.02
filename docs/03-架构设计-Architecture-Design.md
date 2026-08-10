@@ -431,7 +431,7 @@ var/
 | INV-02 | 严格 CSP | `default-src 'self'` + `script-src 'self'` | Electron session 配置 | T-M0-006 | check-desktop-security.mjs |
 | INV-03 | preload 受控桥接 | 仅 `exposeInMainWorld('piBridge')`，不暴露 Node API | preload.ts contextBridge 白名单 | T-M0-002 | check-desktop-security.mjs |
 | INV-04 | credential-vault safeStorage | `safeStorage` Windows DPAPI 加密 | credential-vault.ts | T-M0-007 | check-desktop-security.mjs |
-| INV-05 | Host RPC 契约化 | `api.ts` 完整接口，24 RPC 方法（六路由组 malf/risk/ai/bench/viewer/system） | contract.ts + ipcMain 白名单 | T-M0-005 | check-desktop-security.mjs |
+| INV-05 | Host RPC 契约化 | `api.ts` 完整接口，25 RPC 方法（六路由组 malf/risk/ai/bench/viewer/system） | contract.ts + ipcMain 白名单 | T-M0-005 | check-desktop-security.mjs |
 | INV-06 | HTML 预览独立 CSP | `form-action 'none'`（HTML_PREVIEW_CSP） | 预览窗口独立 session | T-M2-009 | check-desktop-security.mjs |
 
 详见 [08-测试验收 §5.8](./08-测试验收-Test-Plan.md)。

@@ -707,7 +707,7 @@ interface PriceBarDTO {
 
 AI agent 经 registerTool 调用工具时受 **白名单 + 黑名单** 双重约束，由 `before_tool_call` 钩子（03-Arch §3.3）在工具执行前拦截：
 
-**白名单（17 个，AI 可调用）**：
+**白名单（18 个，AI 可调用）**：
 
 | 路由组 | 工具名 | 说明 |
 |---|---|---|

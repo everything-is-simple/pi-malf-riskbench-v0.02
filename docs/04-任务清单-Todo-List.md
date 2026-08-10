@@ -240,7 +240,7 @@
   2. **INV-02** 严格 CSP（`default-src 'self'` + `script-src 'self'`）
   3. **INV-03** preload 受控桥接（仅 `exposeInMainWorld('piBridge')`，不暴露 Node API）
   4. **INV-04** credential-vault safeStorage（Windows DPAPI 加密）
-  5. **INV-05** Host RPC 契约化（所有跨进程通信走 contract，24 RPC 方法登记）
+  5. **INV-05** Host RPC 契约化（所有跨进程通信走 contract，25 RPC 方法登记）
   6. **INV-06** HTML 预览独立 CSP（`form-action 'none'`）
 
 > 实现位置映射（对齐 04-Todo §7.1 task-id）：INV-01/02 → T-M0-006（安全沙箱）；INV-03 → T-M0-002（preload 受控桥接）；INV-04 → T-M0-007（credential-vault）；INV-05 → T-M0-005（contract RPC）；INV-06 → T-M2-009（回测报告 Tab + HTML 预览独立 CSP）。
@@ -403,7 +403,7 @@
 **核心交付**：
 
 1. verify.mjs 统一质量门——补全 m0/full 阶段断言用例（design 阶段已创建骨架）
-2. check-contract-coverage.mjs——补全 24 RPC 方法 AST 校验用例（design 阶段已创建骨架）
+2. check-contract-coverage.mjs——补全 25 RPC 方法 AST 校验用例（design 阶段已创建骨架）
 3. check-desktop-security.mjs——补全 INV-01~06 硬断言用例（design 阶段已创建骨架）
 4. Electron 主进程打包（electron-builder，NSIS .exe）
 5. Python MALF 子进程打包（PyInstaller / embedded Python，含 v0.01 五组件 + riskbench-shared）
@@ -516,7 +516,7 @@
 | T-M4-003 | ~~credentials_get/set 工具 + UI~~ | — | — | — | cancelled | — | — | — | — | 已上移至 T-M3-011 |
 | T-M4-004 | ~~路径配置 UI~~ | — | — | — | cancelled | — | — | — | — | 已上移至 T-M3-012 |
 | T-M4-005 | verify.mjs 统一质量门——补全 m0/full 阶段断言用例 | 治理 | 通用 | P0 | pending | 单件 | [10-开发规范](./10-开发规范-Dev-Rules.md) | `scripts/verify.mjs` | — | 无前置（design 阶段已创建骨架，M4 补全断言用例） |
-| T-M4-006 | check-contract-coverage.mjs——补全 24 RPC 方法 AST 校验用例 | 治理 | 通用 | P0 | pending | 单件 | [06-API](./06-API契约-API-Contracts.md) | `scripts/check-contract-coverage.mjs` | — | 无前置（design 阶段已创建骨架，M4 补全断言用例） |
+| T-M4-006 | check-contract-coverage.mjs——补全 25 RPC 方法 AST 校验用例 | 治理 | 通用 | P0 | pending | 单件 | [06-API](./06-API契约-API-Contracts.md) | `scripts/check-contract-coverage.mjs` | — | 无前置（design 阶段已创建骨架，M4 补全断言用例） |
 | T-M4-007 | check-desktop-security.mjs——补全 INV-01~06 硬断言用例 | 治理 | 壳层 | P0 | pending | 单件 | [01-TRD](./01-TRD-技术需求-Technical-Requirements.md) | `scripts/check-desktop-security.mjs` | — | 无前置（design 阶段已创建骨架，M4 补全断言用例） |
 | T-M4-008a | Electron 主进程打包（electron-builder，NSIS .exe） | 部署 | 壳层 | P0 | pending | 组装 | [03-架构设计](./03-架构设计-Architecture-Design.md) | `apps/desktop/electron-builder.yml` | — | 依赖 M3 完成 |
 | T-M4-008b | Python MALF 子进程打包（PyInstaller / embedded Python，含 v0.01 五组件 + riskbench-shared） | 部署 | MALF | P0 | pending | 组装 | [03-架构设计](./03-架构设计-Architecture-Design.md) §4.1 | `apps/desktop/python-dist/` | — | 依赖 T-M4-008a |

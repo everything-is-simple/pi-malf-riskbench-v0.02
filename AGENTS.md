@@ -98,7 +98,7 @@
 
 | 文档 | 版本 | 权威范围 |
 |---|---|---|
-| [00-文档索引](./docs/00-文档索引-Index.md) | v0.1.2 | 文档导航 + 门禁 + Z 盘拓扑 + 版本历史 |
+| [00-文档索引](./docs/00-文档索引-Index.md) | v0.1.5 | 文档导航 + 门禁 + Z 盘拓扑 + 版本历史（K 线/56 字段/周期收敛同步） |
 | [01-TRD](./docs/01-TRD-技术需求-Technical-Requirements.md) | v0.1.1 | 技术底座 + 六点定案决策 + D1-D29 确定性约束 + INV-01~06 安全不变量（断言对齐脚本） |
 | [02-PRD](./docs/02-PRD-产品需求-Product-Requirements.md) | v0.1.0 | 三层权威 + 四层业务闭环 + 非目标 + 风险声明边界 |
 | [03-Architecture](./docs/03-架构设计-Architecture-Design.md) | v0.1.3 | 四层架构 + Electron 五件骨架 + pi 扩展 + MALF Adapter + 安全不变量六条 + before_tool_call 钩子 + 读路径归属 + 进程崩溃恢复 + 可写连接层容错 + RISK 量化器边界 |
@@ -424,7 +424,7 @@ master 分支只代表已集成、已验证、docs/04 已同步的事实。
 | INV-02 | 严格 CSP | `default-src 'self'` + `script-src 'self'` | Electron session 配置 | T-M0-006 |
 | INV-03 | preload 受控桥接 | 仅 `exposeInMainWorld('piBridge')`，不暴露 Node API | preload.ts contextBridge 白名单 | T-M0-002 |
 | INV-04 | credential-vault safeStorage | `safeStorage` Windows DPAPI 加密 | credential-vault.ts | T-M0-007 |
-| INV-05 | Host RPC 契约化 | `api.ts` 完整接口，24 RPC 方法（六路由组 malf/risk/ai/bench/viewer/system） | contract.ts + ipcMain 白名单 | T-M0-005 |
+| INV-05 | Host RPC 契约化 | `api.ts` 完整接口，25 RPC 方法（六路由组 malf/risk/ai/bench/viewer/system） | contract.ts + ipcMain 白名单 | T-M0-005 |
 | INV-06 | HTML 预览独立 CSP | `form-action 'none'`（HTML_PREVIEW_CSP） | 预览窗口独立 session | T-M2-009 |
 
 ---

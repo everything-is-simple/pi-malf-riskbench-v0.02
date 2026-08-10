@@ -20,9 +20,9 @@
  * 参考：
  *   - pi-desktop/scripts/check-contract-coverage.mjs（AST 校验范式来源）
  *   - pi-studybuddy/scripts/check-contract-coverage.mjs（阶段自适应范式）
- *   - docs/06-API契约-API-Contracts.md（契约 SoT，24 RPC 方法 + 6 路由组 + 17 registerTool 白名单）
+ *   - docs/06-API契约-API-Contracts.md（契约 SoT，25 RPC 方法 + 6 路由组 + 18 registerTool 白名单）
  *   - docs/03-架构设计 §3.2（registerTool 工具集，15 工具，aiCallable 全 ✅）
- *   - docs/06-API §7.3（AI agent 工具调用权限边界：白名单 17 + 黑名单 7）
+ *   - docs/06-API §7.3（AI agent 工具调用权限边界：白名单 18 + 黑名单 7）
  *   - AGENTS.md §6（拆分→小组件→组合）
  */
 import fs from "node:fs";
@@ -51,14 +51,14 @@ const desktopContractPath = path.join(root, "src/contract/desktop.ts");
 if (!fs.existsSync(contractApiPath)) {
   console.log("OK: 契约骨架未就绪（src/contract/api.ts 不存在），跳过 AST 校验");
   console.log("    （M0 骨架 T-M0-005 落地后，本脚本将自动启用完整校验）");
-  console.log("    预期 24 RPC 方法（06-API §3，6 路由组）：");
+  console.log("    预期 25 RPC 方法（06-API §3，6 路由组）：");
   console.log("      malf.query_snapshot / malf.query_snapshot_range / malf.query_signals / malf.query_symbol_list / malf.query_timeframes / malf.query_market_snapshot / malf.query_rankings / malf.explain_snapshot");
   console.log("      risk.declare_risk / risk.list_risk_declarations / risk.update_risk_declaration / risk.delete_risk_declaration / risk.check_risk_contradiction / risk.quantify_risk");
   console.log("      ai.ai_interpret_snapshot / ai.ai_interpret_backtest / ai.ai_discover_rules");
   console.log("      bench.run_backtest_report / bench.read_backtest_report");
   console.log("      viewer.export_csv");
   console.log("      system.models_config_get / system.models_config_set / system.credentials_get / system.credentials_set");
-  console.log("    预期 17 registerTool 工具（06-API §7.3 白名单，03-Arch §3.2 aiCallable ✅）：");
+  console.log("    预期 18 registerTool 工具（06-API §7.3 白名单，03-Arch §3.2 aiCallable ✅）：");
   console.log("      malf: query_snapshot / query_signals / query_symbol_list / query_timeframes / query_market_snapshot / query_rankings / explain_snapshot");
   console.log("      risk: declare_risk / list_risk_declarations / check_risk_contradiction / quantify_risk");
   console.log("      ai: ai_interpret_snapshot / ai_interpret_backtest / ai_discover_rules");
