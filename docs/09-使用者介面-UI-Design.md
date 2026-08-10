@@ -171,16 +171,17 @@ end:   [2026-08-04 ▼]
 
 ## §4 标签页结构
 
-### 4.1 总览（7 个 Tab）
+### 4.1 总览（8 个 Tab）
 
-主内容区顶部为 Tab 栏，共 7 个 Tab，按角色与触发条件排列（D2 修复：新增全市场/排行榜，市场事实改名个股深度，图表并入个股深度）：
+主内容区顶部为 Tab 栏，共 8 个 Tab，按角色与触发条件排列（D2 修复：新增全市场/排行榜，市场事实改名个股深度，图表并入个股深度；T-M3-016 结构雷达为工作台主仪表盘）：
 
 | Tab | 角色 | 触发条件 | 主要 RPC | 默认 |
 |---|---|---|---|---|:--:|
-| 📊 全市场 | 全标的×周期横截面排名 + 筛选（**工作台入口，D2**） | 启动默认 | `query_market_snapshot` / `query_symbol_list` | ✅ 默认 |
-| 🏆 排行榜 | Lifespan 双轨寿命排名 Top-N（**D2**） | 用户触发 | `query_rankings` | |
+| 🎯 结构雷达 | 全市场结构聚合仪表盘（9 区块，替代开盘啦式情绪面板） | 启动默认 | `query_market_snapshot` / `query_signals` | ✅ 默认 |
+| 📊 全市场 | 全标的×周期横截面排名 + 筛选 | 用户触发 | `query_market_snapshot` / `query_symbol_list` | |
+| 🏆 排行榜 | Lifespan 双轨寿命排名 Top-N | 用户触发 | `query_rankings` | |
 | 💬 AI 对话 | pi 原生 AI 承载 | 用户触发 | `ai_interpret_*` / 所有工具 | |
-| 📈 个股深度 | 单标的 56 字段 + signals 事件流 + 区间历史 + 图表 | 下钻（点全市场行） | `query_snapshot` / `query_signals` / `query_snapshot_range` | |
+| 📈 个股深度 | 单标的 56 字段 + signals 事件流 + 区间历史 + 图表 | 下钻（点全市场/排行榜/雷达行） | `query_snapshot` / `query_signals` / `query_snapshot_range` | |
 | ⚠️ 风险声明 | 用户声明 + AI 矛盾提醒 + RISK 量化 | 选标的 | `declare_risk` / `list_risk_declarations` / `check_risk_contradiction` / `quantify_risk` | |
 | 📋 回测报告 | T4 验证报告 + 绩效指标（D1）+ HTML 预览 | 用户触发 | `run_backtest_report` / `read_backtest_report` | |
 | ⚙️ 设置 | 模型/凭据/路径/标的池/绩效开关 | 用户触发 | `models_config_get/set` / `credentials_get/set` | |
@@ -189,6 +190,7 @@ end:   [2026-08-04 ▼]
 - 切换 Tab 不卸载已加载数据（keep-alive），避免重复 RPC
 - 每个 Tab 顶部展示当前标的 + 周期 + 时间范围面包屑
 - 加载中展示骨架屏；错误展示安全编码中文消息（06-API §2.2）
+- **行点击弹窗 K 线（TradingView 式，T-M1-014）**：全市场/排行榜/雷达任意行点击 → 弹窗 K 线图（不离开当前 Tab），弹窗含 `query_snapshot_range` 数据绘制 + 结构标注（波段/区间/事件），详见 §4.10
 
 ### 4.2 📊 全市场 Tab（全标的×周期横截面排名，D2 修复）
 
